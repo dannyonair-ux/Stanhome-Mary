@@ -1,0 +1,1150 @@
+<write_to_file>
+<path>index.html</path>
+<content><!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestionale Stanhome Mary</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+min-height: 100vh;
+padding: 20px;
+}
+.container {
+max-width: 1200px;
+margin: 0 auto;
+background: white;
+border-radius: 20px;
+box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+overflow: hidden;
+}
+.header {
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+padding: 30px;
+text-align: center;
+}
+.header h1 { font-size: 2.5em; margin-bottom: 10px; }
+.nav {
+display: flex;
+background: #f8f9fa;
+border-bottom: 2px solid #e9ecef;
+}
+.nav button {
+flex: 1;
+padding: 15px;
+border: none;
+background: transparent;
+cursor: pointer;
+font-size: 16px;
+font-weight: 600;
+transition: all 0.3s;
+}
+.nav button:hover { background: #e9ecef; }
+.nav button.active {
+background: white;
+color: #667eea;
+border-bottom: 3px solid #667eea;
+}
+.content { padding: 30px; }
+.view { display: none; }
+.view.active { display: block; }
+.dashboard-grid {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+gap: 20px;
+margin-bottom: 30px;
+}
+.stat-card {
+color: white;
+padding: 25px;
+border-radius: 15px;
+text-align: center;
+box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.stat-card h3 {
+font-size: 14px;
+opacity: 0.95;
+margin-bottom: 10px;
+text-transform: uppercase;
+font-weight: 600;
+}
+.stat-card .value { font-size: 36px; font-weight: bold; }
+
+    .stat-acquirenti { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-punti { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .stat-bonus-cons { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .stat-bonus-party { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    
+    .chart-container {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        margin-top: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
+    th { background: #f8f9fa; font-weight: 600; color: #495057; }
+    tr:hover { background: #f8f9fa; }
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin: 0 2px;
+    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+    .btn-success { background: #28a745; color: white; }
+    .btn-success:hover { background: #218838; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-warning { background: #ffc107; color: #333; }
+    .btn-warning:hover { background: #e0a800; }
+    .btn-info { background: #17a2b8; color: white; }
+    .btn-info:hover { background: #138496; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057; }
+    input, select {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border 0.3s;
+    }
+    input:focus, select:focus { outline: none; border-color: #667eea; }
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        flex: 1;
+    }
+    
+    .acquirente-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+        position: relative;
+        border-left: 6px solid;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .acquirente-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    .acquirente-card .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 10px;
+    }
+    .acquirente-card h3 {
+        margin: 0;
+        cursor: pointer;
+        flex: 1;
+        font-size: 1.3em;
+    }
+    .acquirente-card h3:hover {
+        text-decoration: underline;
+    }
+    .btn-delete-acquirente {
+        background: transparent;
+        border: 2px solid #dc3545;
+        color: #dc3545;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-delete-acquirente:hover {
+        background: #dc3545;
+        color: white;
+    }
+    .btn-edit-nome {
+        background: transparent;
+        border: 2px solid #17a2b8;
+        color: #17a2b8;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-edit-nome:hover {
+        background: #17a2b8;
+        color: white;
+    }
+    .acquirente-stats { display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap; }
+    .acquirente-stat {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .acquirente-stat-label { font-size: 12px; color: #6c757d; text-transform: uppercase; }
+    .acquirente-stat-value { font-size: 20px; font-weight: bold; }
+    
+    .indice-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 12px;
+    }
+    .indice-item {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 15px 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .indice-item:hover {
+        border-color: #667eea;
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .indice-item .color-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .indice-item .nome {
+        font-weight: 600;
+        color: #333;
+        flex: 1;
+    }
+    .indice-item .arrow {
+        color: #667eea;
+        font-size: 18px;
+    }
+    
+    .back-btn { margin-bottom: 20px; }
+    .riepilogo {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    .riepilogo h2 { color: #667eea; margin-bottom: 15px; }
+    .riepilogo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #6c757d; }
+    .config-warning {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px;
+    }
+    .config-warning h3 { color: #856404; margin-bottom: 10px; }
+    .hidden { display: none; }
+    .info-text { font-size: 13px; color: #6c757d; margin-top: 5px; }
+    .year-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .year-selector label {
+        margin: 0;
+        min-width: 60px;
+    }
+    .year-selector select {
+        max-width: 150px;
+    }
+    .actions-cell {
+        white-space: nowrap;
+    }
+    .scheda-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .scheda-header h2 {
+        margin: 0;
+        flex: 1;
+    }
+    .warning-box {
+        background: #f8d7da;
+        border: 2px solid #dc3545;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    .empty-state {
+        text-align: center;
+        color: #6c757d;
+        padding: 60px 20px;
+    }
+    .empty-state .icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+</style>
+
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>🏠 Gestionale Stanhome Mary</h1>
+<p>Gestione acquirenti, punti e bonus</p>
+</div>
+
+    <div id="config-warning" class="config-warning" style="display: none;">
+        <h3>⚠️ Configurazione Firebase Richiesta</h3>
+        <p>Per salvare i dati devi configurare Firebase.</p>
+    </div>
+    
+    <div class="nav">
+        <button onclick="showView('home')" id="nav-home" class="active"> Home</button>
+        <button onclick="showView('indice')" id="nav-indice"> Indice</button>
+        <button onclick="showView('acquirenti')" id="nav-acquirenti">👥 Acquirenti</button>
+    </div>
+    
+    <div class="content">
+        <!-- HOME VIEW -->
+        <div id="home-view" class="view active">
+            <h2 style="margin-bottom: 20px;">Dashboard</h2>
+            <div class="year-selector">
+                <label>Anno:</label>
+                <select id="dashboard-year" onchange="updateDashboard()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            <div class="dashboard-grid">
+                <div class="stat-card stat-acquirenti">
+                    <h3>👥 Numero Acquirenti</h3>
+                    <div class="value" id="stat-acquirenti">0</div>
+                </div>
+                <div class="stat-card stat-punti">
+                    <h3>⭐ Punti Totali</h3>
+                    <div class="value" id="stat-punti">0</div>
+                </div>
+                <div class="stat-card stat-bonus-cons">
+                    <h3>🎁 Bonus Consulente</h3>
+                    <div class="value" id="stat-bonus-cons">0</div>
+                </div>
+                <div class="stat-card stat-bonus-party">
+                    <h3>🎉 Bonus Party</h3>
+                    <div class="value" id="stat-bonus-party">0</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chart-punti"></canvas>
+            </div>
+        </div>
+        
+        <!-- INDICE VIEW -->
+        <div id="indice-view" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2> Indice Acquirenti</h2>
+                <button class="btn btn-primary" onclick="openModal('add-acquirente')">+ Nuovo Acquirente</button>
+            </div>
+            <p style="color: #6c757d; margin-bottom: 20px;">Clicca su un nome per aprire la scheda</p>
+            <div id="indice-list" class="indice-list"></div>
+        </div>
+        
+        <!-- ACQUIRENTI VIEW -->
+        <div id="acquirenti-view" class="view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>👥 Riepilogo Acquirenti</h2>
+                <button class="btn btn-primary" onclick="openModal('add-acquirente')">+ Nuovo Acquirente</button>
+            </div>
+            <p style="color: #6c757d; margin-bottom: 20px;">Panoramica completa con punti e bonus</p>
+            <div id="acquirenti-list"></div>
+        </div>
+        
+        <!-- SCHEDA ACQUIRENTE VIEW -->
+        <div id="scheda-view" class="view">
+            <div class="scheda-header">
+                <button class="btn btn-primary back-btn" onclick="showView('acquirenti')" style="margin: 0;">← Torna agli Acquirenti</button>
+                <h2 id="scheda-nome"></h2>
+                <div class="action-buttons">
+                    <button class="btn-edit-nome" onclick="editNomeFromScheda()">✏️ Modifica Nome</button>
+                    <button class="btn-delete-acquirente" onclick="deleteAcquirenteFromScheda()">️ Elimina</button>
+                </div>
+            </div>
+            
+            <div class="year-selector" style="margin-top: 20px;">
+                <label>Anno:</label>
+                <select id="scheda-year" onchange="refreshScheda()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            
+            <div class="riepilogo">
+                <h2>RIEPILOGO <span id="riepilogo-anno" style="font-size: 0.6em; opacity: 0.7;"></span></h2>
+                <div class="riepilogo-grid">
+                    <div><label>Punti</label><div id="scheda-punti" style="font-size: 24px; font-weight: bold; color: #43e97b;">0</div></div>
+                    <div><label>Bonus Cons.</label><div id="scheda-bonus-cons" style="font-size: 24px; font-weight: bold; color: #fa709a;">0</div></div>
+                    <div><label>Bonus Party</label><div id="scheda-bonus-party" style="font-size: 24px; font-weight: bold; color: #f6d365;">0</div></div>
+                    <div><label>Totale</label><div id="scheda-totale" style="font-size: 24px; font-weight: bold; color: #667eea;">0</div></div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px;">
+                <h3>TABELLA ACQUISTI</h3>
+                <button class="btn btn-success" onclick="openModal('add-acquisto')">+ Aggiungi Acquisto</button>
+            </div>
+            <table>
+                <thead><tr><th>Mese</th><th>Spesa (€)</th><th>Punti</th><th>Bonus Cons.</th><th>Bonus Party</th><th>Azioni</th></tr></thead>
+                <tbody id="scheda-table"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL AGGIUNGI ACQUIRENTE -->
+<div id="modal-add-acquirente" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Nuovo Acquirente</h2>
+            <button class="close-btn" onclick="closeModal('add-acquirente')">&times;</button>
+        </div>
+        <form onsubmit="addAcquirente(event)">
+            <div class="form-group">
+                <label>Nome e Cognome</label>
+                <input type="text" id="input-nome" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Aggiungi</button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL MODIFICA NOME -->
+<div id="modal-edit-nome" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>✏️ Modifica Nome Acquirente</h2>
+            <button class="close-btn" onclick="closeModal('edit-nome')">&times;</button>
+        </div>
+        <form onsubmit="saveEditNome(event)">
+            <div class="form-group">
+                <label>Nome attuale</label>
+                <input type="text" id="edit-nome-input" required>
+                <div class="info-text">Correggi eventuali errori di battitura</div>
+            </div>
+            <button type="submit" class="btn btn-info" style="width: 100%;"> Salva Nuovo Nome</button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL AGGIUNGI ACQUISTO -->
+<div id="modal-add-acquisto" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Aggiungi Acquisto</h2>
+            <button class="close-btn" onclick="closeModal('add-acquisto')">&times;</button>
+        </div>
+        <form onsubmit="addAcquisto(event)">
+            <div class="form-group">
+                <label>Anno</label>
+                <select id="input-anno" required>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Mese</label>
+                <select id="input-mese" required>
+                    <option value="0">Gennaio</option><option value="1">Febbraio</option>
+                    <option value="2">Marzo</option><option value="3">Aprile</option>
+                    <option value="4">Maggio</option><option value="5">Giugno</option>
+                    <option value="6">Luglio</option><option value="7">Agosto</option>
+                    <option value="8">Settembre</option><option value="9">Ottobre</option>
+                    <option value="10">Novembre</option><option value="11">Dicembre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Spesa (€)</label>
+                <input type="number" id="input-spesa" step="0.01" min="0" required>
+                <div class="info-text">I punti verranno calcolati automaticamente (1€ = 1 punto)</div>
+            </div>
+            
+            <div class="form-group">
+                <label>Bonus</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="check-bonus-cons" onchange="toggleBonusField('cons')">
+                    <label for="check-bonus-cons"> Ha Bonus Consulente?</label>
+                </div>
+                <div id="field-bonus-cons" class="hidden">
+                    <input type="number" id="input-bonus-cons" step="1" min="0" value="20" placeholder="Punti bonus consulente">
+                </div>
+                
+                <div class="checkbox-group" style="margin-top: 10px;">
+                    <input type="checkbox" id="check-bonus-party" onchange="toggleBonusField('party')">
+                    <label for="check-bonus-party">🎉 Ha Bonus Party?</label>
+                </div>
+                <div id="field-bonus-party" class="hidden">
+                    <input type="number" id="input-bonus-party" step="1" min="0" value="20" placeholder="Punti bonus party">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success" style="width: 100%;">Aggiungi</button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL MODIFICA ACQUISTO -->
+<div id="modal-edit-acquisto" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Modifica Acquisto</h2>
+            <button class="close-btn" onclick="closeModal('edit-acquisto')">&times;</button>
+        </div>
+        <form onsubmit="saveEditAcquisto(event)">
+            <div class="form-group">
+                <label>Mese</label>
+                <select id="edit-mese" required>
+                    <option value="0">Gennaio</option><option value="1">Febbraio</option>
+                    <option value="2">Marzo</option><option value="3">Aprile</option>
+                    <option value="4">Maggio</option><option value="5">Giugno</option>
+                    <option value="6">Luglio</option><option value="7">Agosto</option>
+                    <option value="8">Settembre</option><option value="9">Ottobre</option>
+                    <option value="10">Novembre</option><option value="11">Dicembre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Spesa (€)</label>
+                <input type="number" id="edit-spesa" step="0.01" min="0" required>
+                <div class="info-text">Modificando la spesa, i punti si ricalcolano automaticamente</div>
+            </div>
+            <div class="form-group">
+                <label>Punti (modificabili manualmente)</label>
+                <input type="number" id="edit-punti" step="1" min="0" required>
+                <div class="info-text">Puoi sovrascrivere il valore calcolato automaticamente</div>
+            </div>
+            <div class="form-group">
+                <label>Bonus Consulente</label>
+                <input type="number" id="edit-bonus-cons" step="1" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label>Bonus Party</label>
+                <input type="number" id="edit-bonus-party" step="1" min="0" value="0">
+            </div>
+            <button type="submit" class="btn btn-warning" style="width: 100%;">💾 Salva Modifiche</button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL CONFERMA ELIMINAZIONE ACQUIRENTE -->
+<div id="modal-delete-acquirente" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>⚠️ Conferma Eliminazione</h2>
+            <button class="close-btn" onclick="closeModal('delete-acquirente')">&times;</button>
+        </div>
+        <div class="warning-box">
+            <strong>Attenzione!</strong> Stai per eliminare definitivamente l'acquirente:
+            <br><br>
+            <strong id="delete-acquirente-nome" style="font-size: 1.2em;"></strong>
+            <br><br>
+            Tutti i suoi acquisti e dati verranno eliminati permanentemente. Questa azione <strong>non può essere annullata</strong>.
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-danger" style="flex: 1;" onclick="confirmDeleteAcquirente()">🗑️ Sì, Elimina</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="closeModal('delete-acquirente')">❌ Annulla</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAZ4lq7HVTpdsP7ILZDtOwhek3d1SK0vKo",
+        authDomain: "gestionalestanhome.firebaseapp.com",
+        projectId: "gestionalestanhome",
+        storageBucket: "gestionalestanhome.appspot.com",
+        messagingSenderId: "510683910600",
+        appId: "1:510683910600:web:c95bc0a8d8a9077eb4b0fd"
+    };
+    
+    let db = null;
+    let firebaseInitialized = false;
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        firebaseInitialized = true;
+    } catch (error) {
+        console.error("Errore Firebase:", error);
+        document.getElementById('config-warning').style.display = 'block';
+    }
+    
+    let acquirenti = [];
+    let currentAcquirenteId = null;
+    let acquirenteToDelete = null;
+    let acquirenteToEdit = null;
+    let currentEditIndex = null;
+    const mesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+    
+    const colorPalette = [
+        '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a', 
+        '#fee140', '#a18cd1', '#fbc2eb', '#ff9a9e', '#a1c4fd',
+        '#c2e9fb', '#d4fc79', '#96e6a1', '#f6d365', '#fda085', '#84fab0'
+    ];
+    
+    function getColorForAcquirente(index) {
+        return colorPalette[index % colorPalette.length];
+    }
+    
+    function showView(viewName) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(viewName + '-view').classList.add('active');
+        const navBtn = document.getElementById('nav-' + viewName);
+        if (navBtn) navBtn.classList.add('active');
+        if (viewName === 'home') updateDashboard();
+        if (viewName === 'indice') renderIndice();
+        if (viewName === 'acquirenti') renderAcquirenti();
+    }
+    
+    function openModal(modalName) {
+        if (modalName === 'add-acquisto') {
+            const annoCorrente = document.getElementById('scheda-year')?.value || '2026';
+            document.getElementById('input-anno').value = annoCorrente;
+            document.getElementById('check-bonus-cons').checked = false;
+            document.getElementById('check-bonus-party').checked = false;
+            document.getElementById('field-bonus-cons').classList.add('hidden');
+            document.getElementById('field-bonus-party').classList.add('hidden');
+            document.getElementById('input-bonus-cons').value = '20';
+            document.getElementById('input-bonus-party').value = '20';
+            document.getElementById('input-spesa').value = '';
+        }
+        document.getElementById('modal-' + modalName).classList.add('active');
+    }
+    
+    function closeModal(modalName) {
+        document.getElementById('modal-' + modalName).classList.remove('active');
+    }
+    
+    function toggleBonusField(tipo) {
+        const check = document.getElementById('check-bonus-' + tipo);
+        const field = document.getElementById('field-bonus-' + tipo);
+        if (check.checked) {
+            field.classList.remove('hidden');
+        } else {
+            field.classList.add('hidden');
+        }
+    }
+    
+    function calcolaPunti(spesa) { return Math.floor(spesa); }
+    
+    function getAcquistiPerAnno(acquirente, anno) {
+        if (!acquirente.acquisti) return [];
+        return acquirente.acquisti.filter(a => a.anno === anno || a.anno === undefined);
+    }
+    
+    function calcolaTotaliPerAnno(acquirente, anno) {
+        let punti = 0, bonusCons = 0, bonusParty = 0;
+        const acquisti = getAcquistiPerAnno(acquirente, anno);
+        acquisti.forEach(a => {
+            punti += a.punti !== undefined ? a.punti : calcolaPunti(a.spesa || 0);
+            bonusCons += a.bonusCons || 0;
+            bonusParty += a.bonusParty || 0;
+        });
+        return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
+    }
+    
+    function calcolaTotaliGenerali(acquirente) {
+        let punti = 0, bonusCons = 0, bonusParty = 0;
+        if (acquirente.acquisti) {
+            acquirente.acquisti.forEach(acq => {
+                punti += acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa || 0);
+                bonusCons += acq.bonusCons || 0;
+                bonusParty += acq.bonusParty || 0;
+            });
+        }
+        return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
+    }
+    
+    function updateDashboard() {
+        const anno = parseInt(document.getElementById('dashboard-year').value);
+        let totalPunti = 0, totalBonusCons = 0, totalBonusParty = 0;
+        acquirenti.forEach(a => {
+            const totali = calcolaTotaliPerAnno(a, anno);
+            totalPunti += totali.punti;
+            totalBonusCons += totali.bonusCons;
+            totalBonusParty += totali.bonusParty;
+        });
+        document.getElementById('stat-acquirenti').textContent = acquirenti.length;
+        document.getElementById('stat-punti').textContent = totalPunti;
+        document.getElementById('stat-bonus-cons').textContent = totalBonusCons;
+        document.getElementById('stat-bonus-party').textContent = totalBonusParty;
+        updateChart(anno);
+    }
+    
+    let chart = null;
+    function updateChart(anno) {
+        const ctx = document.getElementById('chart-punti').getContext('2d');
+        const data = acquirenti.map((a, idx) => ({ 
+            nome: a.nome, 
+            totale: calcolaTotaliPerAnno(a, anno).totale,
+            color: getColorForAcquirente(idx)
+        })).filter(d => d.totale > 0).sort((a, b) => b.totale - a.totale).slice(0, 15);
+        
+        if (chart) chart.destroy();
+        
+        if (data.length === 0) {
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { plugins: { title: { display: true, text: `Nessun dato per l'anno ${anno}` } } }
+            });
+            return;
+        }
+        
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => d.nome),
+                datasets: [{
+                    label: 'Punti Totali (Spesa + Bonus)',
+                    data: data.map(d => d.totale),
+                    backgroundColor: data.map(d => d.color + 'cc'),
+                    borderColor: data.map(d => d.color),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { 
+                    legend: { display: false }, 
+                    title: { 
+                        display: true, 
+                        text: `Top Acquirenti ${anno} - Punti Totali`,
+                        font: { size: 16, weight: 'bold' }
+                    } 
+                },
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Punti Totali',
+                            font: { weight: 'bold' }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                weight: 'bold',
+                                size: 13
+                            },
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    async function loadAcquirenti() {
+        if (!firebaseInitialized) { 
+            // Ordinamento anche in fallback
+            acquirenti.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+            renderAcquirenti(); 
+            renderIndice(); 
+            return; 
+        }
+        try {
+            const snapshot = await db.collection('acquirenti').get();
+            acquirenti = [];
+            snapshot.forEach(doc => acquirenti.push({ id: doc.id, ...doc.data() }));
+            
+            // ️ ORDINAMENTO ALFABETICO
+            acquirenti.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+            
+            renderAcquirenti();
+            renderIndice();
+        } catch (error) {
+            console.error("Errore:", error);
+        }
+    }
+    
+    function renderIndice() {
+        const container = document.getElementById('indice-list');
+        if (acquirenti.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Nessun acquirente. Clicca su "+ Nuovo Acquirente" per iniziare.</p></div>';
+            return;
+        }
+        container.innerHTML = acquirenti.map((a, idx) => {
+            const color = getColorForAcquirente(idx);
+            return `<div class="indice-item" onclick="openScheda('${a.id}')">
+                <div class="color-dot" style="background: ${color};"></div>
+                <div class="nome">${a.nome}</div>
+                <div class="arrow">→</div>
+            </div>`;
+        }).join('');
+    }
+    
+    function renderAcquirenti() {
+        const container = document.getElementById('acquirenti-list');
+        if (acquirenti.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="icon"></div><p>Nessun acquirente. Clicca su "+ Nuovo Acquirente" per iniziare.</p></div>';
+            return;
+        }
+        container.innerHTML = acquirenti.map((a, idx) => {
+            const color = getColorForAcquirente(idx);
+            const t = calcolaTotaliGenerali(a);
+            return `<div class="acquirente-card" style="border-left-color: ${color};">
+                <div class="card-header">
+                    <h3 onclick="openScheda('${a.id}')" style="color: ${color};">${a.nome}</h3>
+                    <div class="action-buttons">
+                        <button class="btn-edit-nome" onclick="openEditNome('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">✏️ Modifica</button>
+                        <button class="btn-delete-acquirente" onclick="openDeleteAcquirente('${a.id}', '${a.nome.replace(/'/g, "\\'")}')">🗑️ Elimina</button>
+                    </div>
+                </div>
+                <div class="acquirente-stats" onclick="openScheda('${a.id}')" style="cursor: pointer;">
+                    <div class="acquirente-stat"><div class="acquirente-stat-label">Punti</div><div class="acquirente-stat-value" style="color: #43e97b;">${t.punti}</div></div>
+                    <div class="acquirente-stat"><div class="acquirente-stat-label">Bonus C.</div><div class="acquirente-stat-value" style="color: #fa709a;">${t.bonusCons}</div></div>
+                    <div class="acquirente-stat"><div class="acquirente-stat-label">Bonus P.</div><div class="acquirente-stat-value" style="color: #f6d365;">${t.bonusParty}</div></div>
+                    <div class="acquirente-stat"><div class="acquirente-stat-label">Totale</div><div class="acquirente-stat-value" style="color: ${color};">${t.totale}</div></div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+    
+    async function addAcquirente(event) {
+        event.preventDefault();
+        const nome = document.getElementById('input-nome').value.trim();
+        if (!nome || !firebaseInitialized) return;
+        try {
+            await db.collection('acquirenti').add({ nome, acquisti: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            closeModal('add-acquirente');
+            document.getElementById('input-nome').value = '';
+            await loadAcquirenti();
+            updateDashboard();
+        } catch (error) { console.error(error); }
+    }
+    
+    function openEditNome(id, nome) {
+        event.stopPropagation();
+        acquirenteToEdit = id;
+        document.getElementById('edit-nome-input').value = nome;
+        document.getElementById('modal-edit-nome').classList.add('active');
+    }
+    
+    async function saveEditNome(event) {
+        event.preventDefault();
+        if (!acquirenteToEdit || !firebaseInitialized) return;
+        
+        const nuovoNome = document.getElementById('edit-nome-input').value.trim();
+        if (!nuovoNome) return;
+        
+        try {
+            await db.collection('acquirenti').doc(acquirenteToEdit).update({ nome: nuovoNome });
+            closeModal('edit-nome');
+            acquirenteToEdit = null;
+            
+            if (currentAcquirenteId === acquirenteToEdit) {
+                document.getElementById('scheda-nome').textContent = nuovoNome;
+            }
+            
+            await loadAcquirenti();
+            updateDashboard();
+        } catch (error) {
+            console.error("Errore modifica nome:", error);
+            alert("Errore nella modifica del nome");
+        }
+    }
+    
+    function editNomeFromScheda() {
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        openEditNome(a.id, a.nome);
+    }
+    
+    function openDeleteAcquirente(id, nome) {
+        event.stopPropagation();
+        acquirenteToDelete = id;
+        document.getElementById('delete-acquirente-nome').textContent = nome;
+        document.getElementById('modal-delete-acquirente').classList.add('active');
+    }
+    
+    async function confirmDeleteAcquirente() {
+        if (!acquirenteToDelete || !firebaseInitialized) return;
+        try {
+            await db.collection('acquirenti').doc(acquirenteToDelete).delete();
+            closeModal('delete-acquirente');
+            acquirenteToDelete = null;
+            if (currentAcquirenteId === acquirenteToDelete || !acquirenti.find(a => a.id === currentAcquirenteId)) {
+                currentAcquirenteId = null;
+                showView('acquirenti');
+            } else {
+                await loadAcquirenti();
+                updateDashboard();
+            }
+        } catch (error) {
+            console.error("Errore eliminazione:", error);
+            alert("Errore nell'eliminazione dell'acquirente");
+        }
+    }
+    
+    function deleteAcquirenteFromScheda() {
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        openDeleteAcquirente(a.id, a.nome);
+    }
+    
+    function openScheda(id) {
+        currentAcquirenteId = id;
+        const a = acquirenti.find(x => x.id === id);
+        if (!a) return;
+        document.getElementById('scheda-nome').textContent = a.nome;
+        refreshScheda();
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('scheda-view').classList.add('active');
+    }
+    
+    function refreshScheda() {
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        const anno = parseInt(document.getElementById('scheda-year').value);
+        document.getElementById('riepilogo-anno').textContent = `(${anno})`;
+        const t = calcolaTotaliPerAnno(a, anno);
+        document.getElementById('scheda-punti').textContent = t.punti;
+        document.getElementById('scheda-bonus-cons').textContent = t.bonusCons;
+        document.getElementById('scheda-bonus-party').textContent = t.bonusParty;
+        document.getElementById('scheda-totale').textContent = t.totale;
+        renderSchedaTable(a, anno);
+    }
+    
+    function renderSchedaTable(a, anno) {
+        const tbody = document.getElementById('scheda-table');
+        const acquisti = getAcquistiPerAnno(a, anno);
+        let rows = '';
+        for (let i = 0; i < 12; i++) {
+            const acq = acquisti.find(x => x.mese === i);
+            if (acq) {
+                const punti = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
+                const bonusCons = acq.bonusCons || 0;
+                const bonusParty = acq.bonusParty || 0;
+                rows += `<tr>
+                    <td>${mesi[i]}</td>
+                    <td>€ ${acq.spesa.toFixed(2)}</td>
+                    <td>${punti}</td>
+                    <td>${bonusCons > 0 ? bonusCons : '-'}</td>
+                    <td>${bonusParty > 0 ? bonusParty : '-'}</td>
+                    <td class="actions-cell">
+                        <button class="btn btn-warning btn-sm" onclick="openEditAcquisto(${i})">✏️ Modifica</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAcquisto(${i})">🗑️ Elimina</button>
+                    </td>
+                </tr>`;
+            } else {
+                rows += `<tr><td>${mesi[i]}</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+            }
+        }
+        tbody.innerHTML = rows;
+    }
+    
+    async function addAcquisto(event) {
+        event.preventDefault();
+        const anno = parseInt(document.getElementById('input-anno').value);
+        const mese = parseInt(document.getElementById('input-mese').value);
+        const spesa = parseFloat(document.getElementById('input-spesa').value);
+        
+        const hasBonusCons = document.getElementById('check-bonus-cons').checked;
+        const hasBonusParty = document.getElementById('check-bonus-party').checked;
+        const bonusCons = hasBonusCons ? (parseFloat(document.getElementById('input-bonus-cons').value) || 0) : 0;
+        const bonusParty = hasBonusParty ? (parseFloat(document.getElementById('input-bonus-party').value) || 0) : 0;
+        
+        if (!currentAcquirenteId || !firebaseInitialized) return;
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        if (!a.acquisti) a.acquisti = [];
+        
+        a.acquisti = a.acquisti.filter(x => !(x.anno === anno && x.mese === mese));
+        
+        a.acquisti.push({ 
+            anno, mese, spesa, 
+            punti: calcolaPunti(spesa),
+            bonusCons, bonusParty 
+        });
+        
+        try {
+            await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+            closeModal('add-acquisto');
+            document.getElementById('scheda-year').value = anno;
+            refreshScheda();
+            updateDashboard();
+        } catch (error) { console.error(error); }
+    }
+    
+    function openEditAcquisto(index) {
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        const anno = parseInt(document.getElementById('scheda-year').value);
+        const acquisti = getAcquistiPerAnno(a, anno);
+        const acq = acquisti[index];
+        if (!acq) return;
+        
+        currentEditIndex = index;
+        document.getElementById('edit-mese').value = acq.mese;
+        document.getElementById('edit-spesa').value = acq.spesa;
+        document.getElementById('edit-punti').value = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
+        document.getElementById('edit-bonus-cons').value = acq.bonusCons || 0;
+        document.getElementById('edit-bonus-party').value = acq.bonusParty || 0;
+        
+        document.getElementById('edit-spesa').oninput = function() {
+            const spesa = parseFloat(this.value) || 0;
+            document.getElementById('edit-punti').value = calcolaPunti(spesa);
+        };
+        
+        document.getElementById('modal-edit-acquisto').classList.add('active');
+    }
+    
+    async function saveEditAcquisto(event) {
+        event.preventDefault();
+        if (currentEditIndex === null || !currentAcquirenteId) return;
+        
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a) return;
+        
+        const anno = parseInt(document.getElementById('scheda-year').value);
+        const acquisti = getAcquistiPerAnno(a, anno);
+        const acq = acquisti[currentEditIndex];
+        if (!acq) return;
+        
+        const realIndex = a.acquisti.findIndex(x => x === acq);
+        if (realIndex === -1) return;
+        
+        const nuovoMese = parseInt(document.getElementById('edit-mese').value);
+        const nuovaSpesa = parseFloat(document.getElementById('edit-spesa').value);
+        const nuoviPunti = parseInt(document.getElementById('edit-punti').value);
+        const nuovoBonusCons = parseInt(document.getElementById('edit-bonus-cons').value) || 0;
+        const nuovoBonusParty = parseInt(document.getElementById('edit-bonus-party').value) || 0;
+        
+        a.acquisti[realIndex] = {
+            anno: anno,
+            mese: nuovoMese,
+            spesa: nuovaSpesa,
+            punti: nuoviPunti,
+            bonusCons: nuovoBonusCons,
+            bonusParty: nuovoBonusParty
+        };
+        
+        try {
+            await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+            closeModal('edit-acquisto');
+            currentEditIndex = null;
+            refreshScheda();
+            updateDashboard();
+        } catch (error) { console.error(error); }
+    }
+    
+    async function deleteAcquisto(index) {
+        if (!confirm('Eliminare questo acquisto?')) return;
+        const a = acquirenti.find(x => x.id === currentAcquirenteId);
+        if (!a || !firebaseInitialized) return;
+        const anno = parseInt(document.getElementById('scheda-year').value);
+        const acquisti = getAcquistiPerAnno(a, anno);
+        const acq = acquisti[index];
+        if (!acq) return;
+        
+        const realIndex = a.acquisti.findIndex(x => x === acq);
+        if (realIndex !== -1) {
+            a.acquisti.splice(realIndex, 1);
+        }
+        
+        try {
+            await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+            refreshScheda();
+            updateDashboard();
+        } catch (error) { console.error(error); }
+    }
+    
+    if (firebaseInitialized) loadAcquirenti();
+    else updateDashboard();
+</script>
+
+</body>
+</html>
+</content>
+</write_to_file>

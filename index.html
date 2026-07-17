@@ -155,7 +155,7 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
                 <div class="stat-card stat-acquirenti"><h3>👥 Numero Acquirenti</h3><div class="value" id="stat-acquirenti">0</div></div>
                 <div class="stat-card stat-punti"><h3>⭐ Punti Totali</h3><div class="value" id="stat-punti">0</div></div>
                 <div class="stat-card stat-bonus-cons"><h3>🎁 Bonus Consulente</h3><div class="value" id="stat-bonus-cons">0</div></div>
-                <div class="stat-card stat-bonus-party"><h3> Bonus Party</h3><div class="value" id="stat-bonus-party">0</div></div>
+                <div class="stat-card stat-bonus-party"><h3>🎉 Bonus Party</h3><div class="value" id="stat-bonus-party">0</div></div>
             </div>
             <div class="chart-container"><canvas id="chart-punti"></canvas></div>
         </div>
@@ -249,7 +249,7 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
                 <label>Bonus</label>
                 <div class="checkbox-group"><input type="checkbox" id="check-bonus-cons" onchange="toggleBonusField('cons')"><label for="check-bonus-cons">🎁 Ha Bonus Consulente?</label></div>
                 <div id="field-bonus-cons" class="hidden"><input type="number" id="input-bonus-cons" step="1" min="0" value="20" placeholder="Punti bonus consulente"></div>
-                <div class="checkbox-group" style="margin-top:10px"><input type="checkbox" id="check-bonus-party" onchange="toggleBonusField('party')"><label for="check-bonus-party">🎉 Ha Bonus Party?</label></div>
+                <div class="checkbox-group" style="margin-top:10px"><input type="checkbox" id="check-bonus-party" onchange="toggleBonusField('party')"><label for="check-bonus-party"> Ha Bonus Party?</label></div>
                 <div id="field-bonus-party" class="hidden"><input type="number" id="input-bonus-party" step="1" min="0" value="20" placeholder="Punti bonus party"></div>
             </div>
             <button type="submit" class="btn btn-success" style="width:100%">Aggiungi</button>
@@ -273,7 +273,7 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 
 <div id="modal-delete-acquirente" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h2>️ Conferma Eliminazione</h2><button class="close-btn" onclick="closeModal('delete-acquirente')">&times;</button></div>
+        <div class="modal-header"><h2>⚠️ Conferma Eliminazione</h2><button class="close-btn" onclick="closeModal('delete-acquirente')">&times;</button></div>
         <div class="warning-box"><strong>Attenzione!</strong> Stai per eliminare definitivamente:<br><br><strong id="delete-acquirente-nome" style="font-size:1.2em"></strong><br><br>Tutti i dati verranno eliminati permanentemente.</div>
         <div style="display:flex;gap:10px;margin-top:20px">
             <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteAcquirente()">🗑️ Sì, Elimina</button>
@@ -616,7 +616,7 @@ function renderSchedaTable(a, anno) {
                 '<td>' + (acq.bonusParty > 0 ? acq.bonusParty : '-') + '</td>' +
                 '<td class="actions-cell">' +
                 '<button class="btn btn-warning btn-sm" onclick="openEditAcquisto(' + i + ')">✏️</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deleteAcquisto(' + i + ')">🗑️</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteAcquisto(' + i + ')">️</button>' +
                 '</td></tr>';
         } else {
             rows += '<tr><td>' + mesi[i] + '</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>';

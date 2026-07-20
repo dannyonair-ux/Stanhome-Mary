@@ -363,7 +363,9 @@ return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
 }
 
 function updateDashboard() {
-const anno = parseInt(document.getElementById('dashboard-year').value);
+const annoElement = document.getElementById('dashboard-year');
+if (!annoElement) return;
+const anno = parseInt(annoElement.value) || 2026;
 let totalPunti = 0, totalBonusCons = 0, totalBonusParty = 0;
 acquirenti.forEach(a => {
 const t = calcolaTotaliPerAnno(a, anno);
@@ -378,7 +380,9 @@ updateChart(anno);
 
 let chart = null;
 function updateChart(anno) {
-const ctx = document.getElementById('chart-punti').getContext('2d');
+const chartEl = document.getElementById('chart-punti');
+if (!chartEl) return;
+const ctx = chartEl.getContext('2d');
 const data = acquirenti.map((a, idx) => ({ nome: a.nome, totale: calcolaTotaliPerAnno(a, anno).totale, color: getColorForAcquirente(idx) }))
 .filter(d => d.totale > 0).sort((a, b) => b.totale - a.totale).slice(0, 15);
 if (chart) chart.destroy();
@@ -399,18 +403,22 @@ const snapshot = await db.collection('acquirenti').get();
 acquirenti = [];
 snapshot.forEach(doc => acquirenti.push({ id: doc.id, ...doc.data() }));
 acquirenti.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
-renderAcquirenti(); renderIndice();
+renderAcquirenti(); 
+renderIndice();
+updateDashboard(); // 💡 AGGIUNTO: Aggiorna i dati e il grafico subito dopo il caricamento
 } catch (error) { console.error("Errore caricamento:", error); }
 }
 
 function renderIndice() {
 const container = document.getElementById('indice-list');
+if (!container) return;
 if (acquirenti.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Nessun acquirente.</p></div>'; return; }
 container.innerHTML = acquirenti.map((a, idx) => '<div class="indice-item" onclick="openScheda(\'' + a.id + '\')"><div class="color-dot" style="background:' + getColorForAcquirente(idx) + '"></div><div class="nome">' + a.nome + '</div><div class="arrow">→</div></div>').join('');
 }
 
 function renderAcquirenti() {
 const container = document.getElementById('acquirenti-list');
+if (!container) return;
 if (acquirenti.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">👥</div><p>Nessun acquirente.</p></div>'; return; }
 container.innerHTML = acquirenti.map((a, idx) => {
 const color = getColorForAcquirente(idx);
@@ -425,7 +433,7 @@ const nome = document.getElementById('input-nome').value.trim();
 if (!nome) return;
 await db.collection('acquirenti').add({ nome, acquisti: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
 closeModal('add-acquirente'); document.getElementById('input-nome').value = '';
-await loadAcquirenti(); updateDashboard();
+await loadAcquirenti();
 }
 
 function openEditNome(id, nome) { acquirenteToEdit = id; document.getElementById('edit-nome-input').value = nome; document.getElementById('modal-edit-nome').classList.add('active'); }
@@ -436,7 +444,7 @@ if (!nuovoNome || !acquirenteToEdit) return;
 await db.collection('acquirenti').doc(acquirenteToEdit).update({ nome: nuovoNome });
 closeModal('edit-nome'); acquirenteToEdit = null;
 if (currentAcquirenteId) document.getElementById('scheda-nome').textContent = nuovoNome;
-await loadAcquirenti(); updateDashboard();
+await loadAcquirenti();
 }
 function editNomeFromScheda() { const a = acquirenti.find(x => x.id === currentAcquirenteId); if (a) openEditNome(a.id, a.nome); }
 
@@ -538,6 +546,35 @@ await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.
 refreshScheda(); updateDashboard();
 }
 
+// 💡 AGGIUNTO: Gestione Login e caricamento automatico all'avvio
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('login-screen')?.classList.add('hidden');
+    document.getElementById('app-screen')?.classList.remove('hidden');
+    loadAcquirenti();
+  } else {
+    document.getElementById('login-screen')?.classList.remove('hidden');
+    document.getElementById('app-screen')?.classList.add('hidden');
+  }
+});
+
+async function handleLogin(e) {
+  if(e) e.preventDefault();
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+    if(errEl) errEl.style.display = 'none';
+  } catch(err) {
+    if(errEl) {
+      errEl.textContent = 'Email o password errati!';
+      errEl.style.display = 'block';
+    }
+  }
+}
+</script>
+    
 // LOGIN FUNCTIONS
 function handleLogin(e) {
     e.preventDefault();

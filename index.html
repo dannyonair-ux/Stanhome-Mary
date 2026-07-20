@@ -549,6 +549,7 @@ refreshScheda(); updateDashboard();
 }
 
 // 💡 AGGIUNTO: Gestione Login e caricamento automatico all'avvio
+// Gestione stato Login e caricamento automatico
 auth.onAuthStateChanged(user => {
   if (user) {
     document.getElementById('login-screen')?.classList.add('hidden');
@@ -560,21 +561,36 @@ auth.onAuthStateChanged(user => {
   }
 });
 
+// Funzione di Login collegata direttamente al Form
 async function handleLogin(e) {
-  if(e) e.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-password').value;
+  if (e) e.preventDefault();
+  const emailInput = document.getElementById('login-email') || document.querySelector('input[type="email"]');
+  const passInput = document.getElementById('login-password') || document.querySelector('input[type="password"]');
   const errEl = document.getElementById('login-error');
+
+  if (!emailInput || !passInput) return;
+
   try {
-    await auth.signInWithEmailAndPassword(email, pass);
-    if(errEl) errEl.style.display = 'none';
-  } catch(err) {
-    if(errEl) {
+    await auth.signInWithEmailAndPassword(emailInput.value, passInput.value);
+    if (errEl) errEl.style.display = 'none';
+  } catch (err) {
+    console.error("Errore Login:", err);
+    if (errEl) {
       errEl.textContent = 'Email o password errati!';
       errEl.style.display = 'block';
+    } else {
+      alert('Email o password errati!');
     }
   }
 }
+
+// Assicura che l'evento del form invii la funzione
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = document.querySelector('#login-screen form') || document.querySelector('form');
+  if (loginForm) {
+    loginForm.onsubmit = handleLogin;
+  }
+});
 </script>
     
 // LOGIN FUNCTIONS

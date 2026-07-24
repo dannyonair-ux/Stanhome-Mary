@@ -348,7 +348,8 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 </div>
 </div>
 </div>
-
+<!-- DATALIST PER AUTOCOMPLETE PRODOTTI -->
+<datalist id="lista-prodotti"></datalist>
 <script>
     // AGGIUNGI QUESTO BLOCCO IN TESTA ALLO SCRIPT
 function safeElement(id) {
@@ -856,17 +857,16 @@ function renderRigheOrdine() {
         const acqSelect = acquirenti.map(a => `<option value="${a.id}" ${r.acquirenteId===a.id?'selected':''}>${a.nome}</option>`).join('');
         const totaleRiga = ((r.quantita||0) * (r.prezzoUnitario||0));
         
-        // Crea il valore da mostrare nel cerca se il prodotto è già selezionato
+        // Trova il prodotto selezionato per mostrare nel campo
         const prodottoSel = catalogoProdotti.find(p => p.codice === r.codice);
-        const valoreRicerca = prodottoSel ? `${prodottoSel.codice} - ${prodottoSel.descrizione}` : (r.codice || '');
-
+        const valoreCampo = prodottoSel ? `${prodottoSel.codice} - ${prodottoSel.descrizione}` : (r.codice || '');
+        
         return `<tr>
             <td colspan="2">
-                <input type="text" list="lista-prodotti" value="${valoreRicerca}" 
+                <input type="text" list="lista-prodotti" value="${valoreCampo}" 
                     onchange="selezionaProdottoRiga(${i}, this.value)" 
-                    placeholder="Scrivi codice o nome prodotto..." style="width:100%">
-                <input type="hidden" id="riga-codice-${i}" value="${r.codice||''}">
-                <input type="hidden" id="riga-desc-${i}" value="${r.descrizione||''}">
+                    placeholder="Cerca per codice o nome..." 
+                    style="width:100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
             </td>
             <td><input type="number" value="${r.quantita||1}" min="1" onchange="updateRiga(${i},'quantita',this.value)" style="width:60px"></td>
             <td><input type="number" value="${r.prezzoUnitario||0}" step="0.01" onchange="updateRiga(${i},'prezzoUnitario',this.value)" style="width:80px"></td>
@@ -1038,12 +1038,65 @@ auth.onAuthStateChanged(user => {
         document.getElementById('app-content').style.display = 'block';
         loadAcquirenti();
         updateDashboard();
-        caricaCatalogoProdotti(); // <--- AGGIUNGI QUESTA RIGA QUI
+        caricaCatalogoProdotti(); // <-- AGGIUNGI QUESTA RIGA
     } else {
-        // ...
+        document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('app-content').style.display = 'none';
     }
 });
 */
+    // ==========================================
+// GESTIONE CATALOGO PRODOTTI E AUTOCOMPLETE
+// ==========================================
+let catalogoProdotti = [];
+
+async function caricaCatalogoProdotti() {
+    try {
+        const snap = await db.collection('prodotti').orderBy('codice').get();
+        catalogoProdotti = [];
+        const datalist = document.getElementById('lista-prodotti');
+        if(datalist) datalist.innerHTML = '';
+        
+        snap.forEach(doc => {
+            const p = doc.data();
+            catalogoProdotti.push(p);
+            
+            // Aggiungi al datalist per l'autocomplete
+            if(datalist) {
+                const option = document.createElement('option');
+                option.value = `${p.codice} - ${p.descrizione}`;
+                datalist.appendChild(option);
+            }
+        });
+        console.log(`✅ Catalogo caricato: ${catalogoProdotti.length} prodotti`);
+    } catch(e) {
+        console.error("Errore caricamento catalogo:", e);
+    }
+}
+
+// Funzione per selezionare prodotto dalla riga
+function selezionaProdottoRiga(index, valore) {
+    if(!valore) return;
+    
+    // Cerca il prodotto nel catalogo
+    const prodotto = catalogoProdotti.find(p => 
+        `${p.codice} - ${p.descrizione}` === valore || 
+        p.codice === valore ||
+        p.descrizione === valore
+    );
+    
+    if(prodotto) {
+        ordineCorrente.righe[index].codice = prodotto.codice;
+        ordineCorrente.righe[index].descrizione = prodotto.descrizione;
+    } else {
+        ordineCorrente.righe[index].codice = valore;
+        ordineCorrente.righe[index].descrizione = '';
+    }
+    renderRigheOrdine();
+}
+
+// Modifica la funzione auth.onAuthStateChanged per caricare anche il catalogo
+// Cerca il blocco auth.onAuthStateChanged e aggiungi caricaCatalogoProdotti()
 </script>
 </body>
 </html>

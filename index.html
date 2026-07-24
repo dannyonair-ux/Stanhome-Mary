@@ -287,6 +287,8 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
     </div>
 </div>   
 <!-- MODALS -->
+    <!-- DATALIST PER AUTOCOMPLETE PRODOTTI (Nascosto, serve solo per i suggerimenti) -->
+<datalist id="lista-prodotti"></datalist>
 <div id="modal-add-acquirente" class="modal">
 <div class="modal-content">
 <div class="modal-header"><h2>Nuovo Acquirente</h2><button class="close-btn" onclick="closeModal('add-acquirente')">&times;</button></div>
@@ -848,20 +850,54 @@ function renderDettaglioOrdine() {
 
 function renderRigheOrdine() {
     const tbody = document.getElementById('ordine-righe-body');
+    if(!tbody) return;
+    
     tbody.innerHTML = ordineCorrente.righe.map((r, i) => {
         const acqSelect = acquirenti.map(a => `<option value="${a.id}" ${r.acquirenteId===a.id?'selected':''}>${a.nome}</option>`).join('');
         const totaleRiga = ((r.quantita||0) * (r.prezzoUnitario||0));
+        
+        // Crea il valore da mostrare nel cerca se il prodotto è già selezionato
+        const prodottoSel = catalogoProdotti.find(p => p.codice === r.codice);
+        const valoreRicerca = prodottoSel ? `${prodottoSel.codice} - ${prodottoSel.descrizione}` : (r.codice || '');
+
         return `<tr>
-            <td><input type="text" value="${r.codice||''}" onchange="updateRiga(${i},'codice',this.value)" placeholder="Codice"></td>
-            <td><input type="text" value="${r.descrizione||''}" onchange="updateRiga(${i},'descrizione',this.value)" placeholder="Descrizione"></td>
+            <td colspan="2">
+                <input type="text" list="lista-prodotti" value="${valoreRicerca}" 
+                    onchange="selezionaProdottoRiga(${i}, this.value)" 
+                    placeholder="Scrivi codice o nome prodotto..." style="width:100%">
+                <input type="hidden" id="riga-codice-${i}" value="${r.codice||''}">
+                <input type="hidden" id="riga-desc-${i}" value="${r.descrizione||''}">
+            </td>
             <td><input type="number" value="${r.quantita||1}" min="1" onchange="updateRiga(${i},'quantita',this.value)" style="width:60px"></td>
             <td><input type="number" value="${r.prezzoUnitario||0}" step="0.01" onchange="updateRiga(${i},'prezzoUnitario',this.value)" style="width:80px"></td>
-            <td><select onchange="updateRiga(${i},'acquirenteId',this.value)"><option value="">Seleziona...</option>${acqSelect}</select></td>
+            <td><select onchange="updateRiga(${i},'acquirenteId',this.value)" style="width:100%"><option value="">Seleziona...</option>${acqSelect}</select></td>
             <td>€${totaleRiga.toFixed(2)}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(${i})">️</button></td>
+            <td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(${i})">🗑️</button></td>
         </tr>`;
     }).join('');
     calcolaTotaleOrdine();
+}
+
+// Nuova funzione: gestisce la selezione dall'autocomplete
+function selezionaProdottoRiga(index, valore) {
+    if(!valore) return;
+    
+    // Cerca il prodotto nel catalogo caricato
+    const prodotto = catalogoProdotti.find(p => `${p.codice} - ${p.descrizione}` === valore);
+    
+    if(prodotto) {
+        // Se trovato, aggiorna codice e descrizione nascosti
+        ordineCorrente.righe[index].codice = prodotto.codice;
+        ordineCorrente.righe[index].descrizione = prodotto.descrizione;
+        
+        // Aggiorna i campi hidden per sicurezza
+        document.getElementById(`riga-codice-${index}`).value = prodotto.codice;
+        document.getElementById(`riga-desc-${index}`).value = prodotto.descrizione;
+    } else {
+        // Se l'utente ha scritto qualcosa a mano, lo salviamo come codice
+        ordineCorrente.righe[index].codice = valore;
+        ordineCorrente.righe[index].descrizione = '';
+    }
 }
 
 function updateRiga(index, campo, valore) {
@@ -965,6 +1001,49 @@ function renderRiepilogoConfermato() {
         </div>
     `).join('');
 }
+    // Variabile globale per il catalogo
+let catalogoProdotti = [];
+
+// Funzione per caricare i prodotti da Firebase all'avvio
+async function caricaCatalogoProdotti() {
+    try {
+        const snap = await db.collection('prodotti').orderBy('codice').get();
+        catalogoProdotti = [];
+        const datalist = document.getElementById('lista-prodotti');
+        if(datalist) datalist.innerHTML = '';
+        
+        snap.forEach(doc => {
+            const p = doc.data();
+            catalogoProdotti.push(p);
+            
+            // Aggiungi al datalist per l'autocomplete
+            if(datalist) {
+                const option = document.createElement('option');
+                option.value = `${p.codice} - ${p.descrizione}`;
+                datalist.appendChild(option);
+            }
+        });
+        console.log(`✅ Catalogo caricato: ${catalogoProdotti.length} prodotti`);
+    } catch(e) {
+        console.error("Errore caricamento catalogo:", e);
+    }
+}
+
+// Modifica la funzione auth.onAuthStateChanged per caricare anche il catalogo
+// Cerca il blocco auth.onAuthStateChanged e aggiungici caricaCatalogoProdotti()
+/*
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
+        loadAcquirenti();
+        updateDashboard();
+        caricaCatalogoProdotti(); // <--- AGGIUNGI QUESTA RIGA QUI
+    } else {
+        // ...
+    }
+});
+*/
 </script>
 </body>
 </html>

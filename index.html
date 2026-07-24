@@ -348,6 +348,10 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 </div>
 
 <script>
+    // AGGIUNGI QUESTO BLOCCO IN TESTA ALLO SCRIPT
+function safeElement(id) {
+    return document.getElementById(id) || { style: { display: 'none' }, classList: { remove: () => {}, add: () => {} } };
+}
 const firebaseConfig = {
     apiKey: "AIzaSyBm1DPI0rO93_8576GjPZtPAOfR2FUN8GU",
     authDomain: "gestionalestanhome.firebaseapp.com",
@@ -408,15 +412,20 @@ auth.onAuthStateChanged(user => {
 // FUNZIONI PRINCIPALI
 // ==========================================
 function showView(viewName) {
+    // Usa safeElement per evitare errori
+    const view = safeElement(viewName + '-view');
+    const navButton = safeElement('nav-' + viewName);
+    
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById(viewName + '-view').classList.add('active');
-    document.getElementById('nav-' + viewName).classList.add('active');
+    
+    if (view) view.classList.add('active');
+    if (navButton) navButton.classList.add('active');
+    
     if (viewName === 'home') updateDashboard();
     if (viewName === 'indice') renderIndice();
     if (viewName === 'acquirenti') renderAcquirenti();
     if (viewName === 'ordini') loadOrdini();
-    if (viewName === 'dettaglio-ordine') renderDettaglioOrdine();
 }
 
 function openModal(name) {

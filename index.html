@@ -590,6 +590,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
     
+</div>
+</div>
+</div>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyAZ4lq7HVTpdsP7ILZDtOwhek3d1SK0vKo",
+    authDomain: "gestionalestanhome.firebaseapp.com",
+    projectId: "gestionalestanhome",
+    storageBucket: "gestionalestanhome.appspot.com",
+    messagingSenderId: "510683910600",
+    appId: "1:510683910600:web:c95bc0a8d8a9077eb4b0fd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
 // LOGIN FUNCTIONS
 function handleLogin(e) {
     e.preventDefault();
@@ -624,3 +642,7 @@ auth.onAuthStateChanged(user => {
 </html>
 </content>
 </write_to_file>
+}
+</script>
+</body>
+</html>

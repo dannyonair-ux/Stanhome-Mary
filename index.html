@@ -121,6 +121,25 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
     font-weight: bold;
 }
 .btn-logout:hover { background: white; color: #667eea; }
+    /* --- GESTIONE ORDINI --- */
+.ordini-list { display: grid; gap: 15px; }
+.ordine-card { background: white; border: 2px solid #e9ecef; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s; }
+.ordine-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.ordine-card.bozza { border-left: 6px solid #ffc107; }
+.ordine-card.confermato { border-left: 6px solid #28a745; }
+.ordine-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.ordine-stato { padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.stato-bozza { background: #fff3cd; color: #856404; }
+.stato-confermato { background: #d4edda; color: #155724; }
+.tabella-righe { width: 100%; margin: 15px 0; border-collapse: collapse; }
+.tabella-righe th { background: #f8f9fa; padding: 10px; text-align: left; }
+.tabella-righe td { padding: 10px; border-bottom: 1px solid #e9ecef; }
+.tabella-righe input, .tabella-righe select { width: 100%; padding: 5px; border: 1px solid #e9ecef; border-radius: 5px; }
+.ordine-totale { font-size: 24px; font-weight: bold; color: #667eea; text-align: right; margin-top: 15px; }
+.riepilogo-acquirenti { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; }
+.btn-add-riga { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; margin: 10px 0; }
+.btn-conferma { background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-left: 10px; }
+.btn-salva-bozza { background: #ffc107; color: #333; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -155,6 +174,7 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 <button onclick="showView('home')" id="nav-home" class="active">🏠 Home</button>
 <button onclick="showView('indice')" id="nav-indice">📋 Indice</button>
 <button onclick="showView('acquirenti')" id="nav-acquirenti">👥 Acquirenti</button>
+<button onclick="showView('ordini')" id="nav-ordini">🛒 Ordini</button>
 </div>
 <div class="content">
 <div id="home-view" class="view active">
@@ -229,6 +249,43 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 </div>
 </div>
 
+ <!-- VIEW ORDINI -->
+<div id="ordini-view" class="view">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2>🛒 Gestione Ordini</h2>
+        <button class="btn btn-primary" onclick="creaNuovoOrdine()">+ Nuovo Ordine</button>
+    </div>
+    <div id="ordini-list" class="ordini-list"></div>
+</div>
+
+<!-- DETTAGLIO ORDINE -->
+<div id="dettaglio-ordine-view" class="view">
+    <button class="btn btn-primary back-btn" onclick="showView('ordini')">← Torna agli Ordini</button>
+    <div class="ordine-header">
+        <h2 id="ordine-titolo">Ordine #</h2>
+        <span id="ordine-stato-badge" class="ordine-stato stato-bozza">Bozza</span>
+    </div>
+    
+    <div id="ordine-bozza-controls" style="display:none">
+        <table class="tabella-righe">
+            <thead><tr><th>Codice</th><th>Descrizione</th><th>Qtà</th><th>Prezzo</th><th>Acquirente</th><th>Totale</th><th>Azioni</th></tr></thead>
+            <tbody id="ordine-righe-body"></tbody>
+        </table>
+        <button class="btn-add-riga" onclick="aggiungiRigaOrdine()">+ Aggiungi Riga</button>
+        <div class="ordine-totale">Totale: €<span id="ordine-totale-display">0.00</span></div>
+        <div style="margin-top:20px">
+            <button class="btn-salva-bozza" onclick="salvaBozzaOrdine()">💾 Salva Bozza</button>
+            <button class="btn-conferma" onclick="confermaOrdine()">✅ Conferma Ordine</button>
+        </div>
+    </div>
+    
+    <div id="ordine-confermato-view" style="display:none">
+        <div class="riepilogo-acquirenti">
+            <h3>📊 Riepilogo per Acquirente</h3>
+            <div id="riepilogo-acquirenti-content"></div>
+        </div>
+    </div>
+</div>   
 <!-- MODALS -->
 <div id="modal-add-acquirente" class="modal">
 <div class="modal-content">
@@ -292,13 +349,14 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 
 <script>
 const firebaseConfig = {
-apiKey: "AIzaSyBm1DPI0rO93_8576GjPZtPAOfR2FUN8GU",
-authDomain: "gestionalestanhome.firebaseapp.com",
-projectId: "gestionalestanhome",
-storageBucket: "gestionalestanhome.firebasestorage.app",
-messagingSenderId: "510683910600",
-appId: "1:510683910600:web:c95bc0a8d8a9077eb4b0fd"
+    apiKey: "AIzaSyBm1DPI0rO93_8576GjPZtPAOfR2FUN8GU",
+    authDomain: "gestionalestanhome.firebaseapp.com",
+    projectId: "gestionalestanhome",
+    storageBucket: "gestionalestanhome.firebasestorage.app",
+    messagingSenderId: "510683910600",
+    appId: "1:510683910600:web:c95bc0a8d8a9077eb4b0fd"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -313,302 +371,9 @@ const colorPalette = ['#667eea','#f093fb','#4facfe','#43e97b','#fa709a','#fee140
 
 function getColorForAcquirente(index) { return colorPalette[index % colorPalette.length]; }
 
-function showView(viewName) {
-document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-document.getElementById(viewName + '-view').classList.add('active');
-document.getElementById('nav-' + viewName).classList.add('active');
-if (viewName === 'home') updateDashboard();
-if (viewName === 'indice') renderIndice();
-if (viewName === 'acquirenti') renderAcquirenti();
-}
-
-function openModal(name) {
-if (name === 'add-acquisto') {
-document.getElementById('input-anno').value = document.getElementById('scheda-year')?.value || '2026';
-document.getElementById('check-bonus-cons').checked = false;
-document.getElementById('check-bonus-party').checked = false;
-document.getElementById('field-bonus-cons').classList.add('hidden');
-document.getElementById('field-bonus-party').classList.add('hidden');
-document.getElementById('input-spesa').value = '';
-}
-document.getElementById('modal-' + name).classList.add('active');
-}
-function closeModal(name) { document.getElementById('modal-' + name).classList.remove('active'); }
-function toggleBonusField(tipo) {
-const check = document.getElementById('check-bonus-' + tipo);
-document.getElementById('field-bonus-' + tipo).classList.toggle('hidden', !check.checked);
-}
-function calcolaPunti(spesa) { return Math.floor(spesa); }
-function getAcquistiPerAnno(acquirente, anno) { return (acquirente.acquisti || []).filter(a => a.anno === anno || a.anno === undefined); }
-
-function calcolaTotaliPerAnno(acquirente, anno) {
-let punti = 0, bonusCons = 0, bonusParty = 0;
-getAcquistiPerAnno(acquirente, anno).forEach(a => {
-punti += a.punti !== undefined ? a.punti : calcolaPunti(a.spesa || 0);
-bonusCons += a.bonusCons || 0;
-bonusParty += a.bonusParty || 0;
-});
-return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
-}
-
-function calcolaTotaliGenerali(acquirente) {
-let punti = 0, bonusCons = 0, bonusParty = 0;
-(acquirente.acquisti || []).forEach(acq => {
-punti += acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa || 0);
-bonusCons += acq.bonusCons || 0;
-bonusParty += acq.bonusParty || 0;
-});
-return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
-}
-
-function updateDashboard() {
-const annoElement = document.getElementById('dashboard-year');
-if (!annoElement) return;
-const anno = parseInt(annoElement.value) || 2026;
-let totalPunti = 0, totalBonusCons = 0, totalBonusParty = 0;
-acquirenti.forEach(a => {
-const t = calcolaTotaliPerAnno(a, anno);
-totalPunti += t.punti; totalBonusCons += t.bonusCons; totalBonusParty += t.bonusParty;
-});
-document.getElementById('stat-acquirenti').textContent = acquirenti.length;
-document.getElementById('stat-punti').textContent = totalPunti;
-document.getElementById('stat-bonus-cons').textContent = totalBonusCons;
-document.getElementById('stat-bonus-party').textContent = totalBonusParty;
-updateChart(anno);
-}
-
-let chart = null;
-function updateChart(anno) {
-const chartEl = document.getElementById('chart-punti');
-if (!chartEl) return;
-const ctx = chartEl.getContext('2d');
-const data = acquirenti.map((a, idx) => ({ nome: a.nome, totale: calcolaTotaliPerAnno(a, anno).totale, color: getColorForAcquirente(idx) }))
-.filter(d => d.totale > 0).sort((a, b) => b.totale - a.totale).slice(0, 15);
-if (chart) chart.destroy();
-if (data.length === 0) {
-chart = new Chart(ctx, { type: 'bar', data: { labels: [], datasets: [] }, options: { plugins: { title: { display: true, text: 'Nessun dato per l\'anno ' + anno } } } });
-return;
-}
-chart = new Chart(ctx, {
-type: 'bar',
-data: { labels: data.map(d => d.nome), datasets: [{ label: 'Punti Totali', data: data.map(d => d.totale), backgroundColor: data.map(d => d.color + 'cc'), borderColor: data.map(d => d.color), borderWidth: 2 }] },
-options: { responsive: true, plugins: { legend: { display: false }, title: { display: true, text: 'Top Acquirenti ' + anno + ' - Punti Totali', font: { size: 16, weight: 'bold' } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Punti Totali', font: { weight: 'bold' } } }, x: { ticks: { font: { weight: 'bold', size: 13 }, maxRotation: 45, minRotation: 45 } } } }
-});
-}
-
-async function loadAcquirenti() {
-try {
-const snapshot = await db.collection('acquirenti').get();
-acquirenti = [];
-snapshot.forEach(doc => acquirenti.push({ id: doc.id, ...doc.data() }));
-acquirenti.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
-renderAcquirenti(); 
-renderIndice();
-updateDashboard(); // 💡 AGGIUNTO: Aggiorna i dati e il grafico subito dopo il caricamento
-} catch (error) { console.error("Errore caricamento:", error); }
-}
-
-function renderIndice() {
-const container = document.getElementById('indice-list');
-if (!container) return;
-if (acquirenti.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Nessun acquirente.</p></div>'; return; }
-container.innerHTML = acquirenti.map((a, idx) => '<div class="indice-item" onclick="openScheda(\'' + a.id + '\')"><div class="color-dot" style="background:' + getColorForAcquirente(idx) + '"></div><div class="nome">' + a.nome + '</div><div class="arrow">→</div></div>').join('');
-}
-
-function renderAcquirenti() {
-const container = document.getElementById('acquirenti-list');
-if (!container) return;
-if (acquirenti.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">👥</div><p>Nessun acquirente.</p></div>'; return; }
-container.innerHTML = acquirenti.map((a, idx) => {
-const color = getColorForAcquirente(idx);
-const t = calcolaTotaliGenerali(a);
-return '<div class="acquirente-card" style="border-left-color:' + color + '"><div class="card-header"><h3 onclick="openScheda(\'' + a.id + '\')" style="color:' + color + '">' + a.nome + '</h3><div class="action-buttons"><button class="btn-edit-nome" onclick="event.stopPropagation();openEditNome(\'' + a.id + '\',\'' + a.nome.replace(/'/g, "\\'") + '\')">✏️ Modifica</button><button class="btn-delete-acquirente" onclick="event.stopPropagation();openDeleteAcquirente(\'' + a.id + '\',\'' + a.nome.replace(/'/g, "\\'") + '\')">🗑️ Elimina</button></div></div><div class="acquirente-stats" onclick="openScheda(\'' + a.id + '\')" style="cursor:pointer"><div class="acquirente-stat"><div class="acquirente-stat-label">Punti</div><div class="acquirente-stat-value" style="color:#43e97b">' + t.punti + '</div></div><div class="acquirente-stat"><div class="acquirente-stat-label">Bonus C.</div><div class="acquirente-stat-value" style="color:#fa709a">' + t.bonusCons + '</div></div><div class="acquirente-stat"><div class="acquirente-stat-label">Bonus P.</div><div class="acquirente-stat-value" style="color:#f6d365">' + t.bonusParty + '</div></div><div class="acquirente-stat"><div class="acquirente-stat-label">Totale</div><div class="acquirente-stat-value" style="color:' + color + '">' + t.totale + '</div></div></div></div>';
-}).join('');
-}
-
-async function addAcquirente(event) {
-event.preventDefault();
-const nome = document.getElementById('input-nome').value.trim();
-if (!nome) return;
-await db.collection('acquirenti').add({ nome, acquisti: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-closeModal('add-acquirente'); document.getElementById('input-nome').value = '';
-await loadAcquirenti();
-}
-
-function openEditNome(id, nome) { acquirenteToEdit = id; document.getElementById('edit-nome-input').value = nome; document.getElementById('modal-edit-nome').classList.add('active'); }
-async function saveEditNome(event) {
-event.preventDefault();
-const nuovoNome = document.getElementById('edit-nome-input').value.trim();
-if (!nuovoNome || !acquirenteToEdit) return;
-await db.collection('acquirenti').doc(acquirenteToEdit).update({ nome: nuovoNome });
-closeModal('edit-nome'); acquirenteToEdit = null;
-if (currentAcquirenteId) document.getElementById('scheda-nome').textContent = nuovoNome;
-await loadAcquirenti();
-}
-function editNomeFromScheda() { const a = acquirenti.find(x => x.id === currentAcquirenteId); if (a) openEditNome(a.id, a.nome); }
-
-function openDeleteAcquirente(id, nome) { acquirenteToDelete = id; document.getElementById('delete-acquirente-nome').textContent = nome; document.getElementById('modal-delete-acquirente').classList.add('active'); }
-async function confirmDeleteAcquirente() {
-if (!acquirenteToDelete) return;
-await db.collection('acquirenti').doc(acquirenteToDelete).delete();
-closeModal('delete-acquirente'); acquirenteToDelete = null; currentAcquirenteId = null; showView('acquirenti');
-}
-function deleteAcquirenteFromScheda() { const a = acquirenti.find(x => x.id === currentAcquirenteId); if (a) openDeleteAcquirente(a.id, a.nome); }
-
-function openScheda(id) {
-currentAcquirenteId = id;
-const a = acquirenti.find(x => x.id === id);
-if (!a) return;
-document.getElementById('scheda-nome').textContent = a.nome;
-refreshScheda();
-document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-document.getElementById('scheda-view').classList.add('active');
-}
-
-function refreshScheda() {
-const a = acquirenti.find(x => x.id === currentAcquirenteId); if (!a) return;
-const anno = parseInt(document.getElementById('scheda-year').value);
-document.getElementById('riepilogo-anno').textContent = '(' + anno + ')';
-const t = calcolaTotaliPerAnno(a, anno);
-document.getElementById('scheda-punti').textContent = t.punti;
-document.getElementById('scheda-bonus-cons').textContent = t.bonusCons;
-document.getElementById('scheda-bonus-party').textContent = t.bonusParty;
-document.getElementById('scheda-totale').textContent = t.totale;
-renderSchedaTable(a, anno);
-}
-
-function renderSchedaTable(a, anno) {
-const tbody = document.getElementById('scheda-table');
-const acquisti = getAcquistiPerAnno(a, anno);
-let rows = '';
-for (let i = 0; i < 12; i++) {
-const acq = acquisti.find(x => x.mese === i);
-if (acq) {
-const punti = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
-rows += '<tr><td>' + mesi[i] + '</td><td>€ ' + acq.spesa.toFixed(2) + '</td><td>' + punti + '</td><td>' + (acq.bonusCons > 0 ? acq.bonusCons : '-') + '</td><td>' + (acq.bonusParty > 0 ? acq.bonusParty : '-') + '</td><td class="actions-cell"><button class="btn btn-warning btn-sm" onclick="openEditAcquisto(' + i + ')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteAcquisto(' + i + ')">🗑️</button></td></tr>';
-} else { rows += '<tr><td>' + mesi[i] + '</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>'; }
-}
-tbody.innerHTML = rows;
-}
-
-async function addAcquisto(event) {
-event.preventDefault();
-const anno = parseInt(document.getElementById('input-anno').value);
-const mese = parseInt(document.getElementById('input-mese').value);
-const spesa = parseFloat(document.getElementById('input-spesa').value);
-const bonusCons = document.getElementById('check-bonus-cons').checked ? (parseFloat(document.getElementById('input-bonus-cons').value) || 0) : 0;
-const bonusParty = document.getElementById('check-bonus-party').checked ? (parseFloat(document.getElementById('input-bonus-party').value) || 0) : 0;
-if (!currentAcquirenteId) return;
-const a = acquirenti.find(x => x.id === currentAcquirenteId); if (!a) return;
-if (!a.acquisti) a.acquisti = [];
-a.acquisti = a.acquisti.filter(x => !(x.anno === anno && x.mese === mese));
-a.acquisti.push({ anno, mese, spesa, punti: calcolaPunti(spesa), bonusCons, bonusParty });
-await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
-closeModal('add-acquisto'); document.getElementById('scheda-year').value = anno;
-refreshScheda(); updateDashboard();
-}
-
-function openEditAcquisto(index) {
-const a = acquirenti.find(x => x.id === currentAcquirenteId); if (!a) return;
-const anno = parseInt(document.getElementById('scheda-year').value);
-const acq = getAcquistiPerAnno(a, anno)[index]; if (!acq) return;
-currentEditIndex = index;
-document.getElementById('edit-mese').value = acq.mese;
-document.getElementById('edit-spesa').value = acq.spesa;
-document.getElementById('edit-punti').value = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
-document.getElementById('edit-bonus-cons').value = acq.bonusCons || 0;
-document.getElementById('edit-bonus-party').value = acq.bonusParty || 0;
-document.getElementById('edit-spesa').oninput = function() { document.getElementById('edit-punti').value = calcolaPunti(parseFloat(this.value) || 0); };
-document.getElementById('modal-edit-acquisto').classList.add('active');
-}
-
-async function saveEditAcquisto(event) {
-event.preventDefault();
-if (currentEditIndex === null || !currentAcquirenteId) return;
-const a = acquirenti.find(x => x.id === currentAcquirenteId); if (!a) return;
-const anno = parseInt(document.getElementById('scheda-year').value);
-const acq = getAcquistiPerAnno(a, anno)[currentEditIndex]; if (!acq) return;
-const realIndex = a.acquisti.findIndex(x => x === acq); if (realIndex === -1) return;
-a.acquisti[realIndex] = { anno, mese: parseInt(document.getElementById('edit-mese').value), spesa: parseFloat(document.getElementById('edit-spesa').value), punti: parseInt(document.getElementById('edit-punti').value), bonusCons: parseInt(document.getElementById('edit-bonus-cons').value) || 0, bonusParty: parseInt(document.getElementById('edit-bonus-party').value) || 0 };
-await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
-closeModal('edit-acquisto'); currentEditIndex = null; refreshScheda(); updateDashboard();
-}
-
-async function deleteAcquisto(index) {
-if (!confirm('Eliminare questo acquisto?')) return;
-const a = acquirenti.find(x => x.id === currentAcquirenteId); if (!a) return;
-const anno = parseInt(document.getElementById('scheda-year').value);
-const acq = getAcquistiPerAnno(a, anno)[index]; if (!acq) return;
-const realIndex = a.acquisti.findIndex(x => x === acq);
-if (realIndex !== -1) a.acquisti.splice(realIndex, 1);
-await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
-refreshScheda(); updateDashboard();
-}
-
-// 💡 AGGIUNTO: Gestione Login e caricamento automatico all'avvio
-// Gestione stato Login e caricamento automatico
-auth.onAuthStateChanged(user => {
-  const loginOverlay = document.getElementById('login-overlay');
-  
-  if (user) {
-    // Se l'utente è autenticato, nascondi la schermata di login
-    if (loginOverlay) loginOverlay.style.display = 'none';
-    
-    // Carica i dati e aggiorna subito la dashboard
-    loadAcquirenti();
-  } else {
-    // Se non è autenticato, mostra la schermata di login
-    if (loginOverlay) loginOverlay.style.display = 'flex';
-  }
-});
-
-// Funzione di Login
-async function handleLogin(e) {
-  if (e) e.preventDefault();
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-
-  try {
-    await auth.signInWithEmailAndPassword(email, pass);
-    if (errEl) errEl.style.display = 'none';
-  } catch (err) {
-    console.error("Errore Login:", err);
-    if (errEl) {
-      errEl.style.display = 'block';
-    }
-  }
-}
-
-// Assicura che l'evento del form invii la funzione
-document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = document.querySelector('#login-screen form') || document.querySelector('form');
-  if (loginForm) {
-    loginForm.onsubmit = handleLogin;
-  }
-});
-</script>
-    
-</div>
-</div>
-</div>
-
-<script>
-const firebaseConfig = {
-    apiKey: "AIzaSyAZ4lq7HVTpdsP7ILZDtOwhek3d1SK0vKo",
-    authDomain: "gestionalestanhome.firebaseapp.com",
-    projectId: "gestionalestanhome",
-    storageBucket: "gestionalestanhome.appspot.com",
-    messagingSenderId: "510683910600",
-    appId: "1:510683910600:web:c95bc0a8d8a9077eb4b0fd"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// LOGIN FUNCTIONS
+// ==========================================
+// GESTIONE LOGIN
+// ==========================================
 function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
@@ -631,17 +396,565 @@ function handleLogout() {
 auth.onAuthStateChanged(user => {
     if (user) {
         document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
         loadAcquirenti();
-        updateDashboard();
     } else {
         document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('app-content').style.display = 'none';
     }
 });
-</script>
-</body>
-</html>
-</content>
-</write_to_file>
+
+// ==========================================
+// FUNZIONI PRINCIPALI
+// ==========================================
+function showView(viewName) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(viewName + '-view').classList.add('active');
+    document.getElementById('nav-' + viewName).classList.add('active');
+    if (viewName === 'home') updateDashboard();
+    if (viewName === 'indice') renderIndice();
+    if (viewName === 'acquirenti') renderAcquirenti();
+    if (viewName === 'ordini') loadOrdini();
+    if (viewName === 'dettaglio-ordine') renderDettaglioOrdine();
+}
+
+function openModal(name) {
+    if (name === 'add-acquisto') {
+        document.getElementById('input-anno').value = document.getElementById('scheda-year')?.value || '2026';
+        document.getElementById('check-bonus-cons').checked = false;
+        document.getElementById('check-bonus-party').checked = false;
+        document.getElementById('field-bonus-cons').classList.add('hidden');
+        document.getElementById('field-bonus-party').classList.add('hidden');
+        document.getElementById('input-spesa').value = '';
+    }
+    document.getElementById('modal-' + name).classList.add('active');
+}
+
+function closeModal(name) { 
+    document.getElementById('modal-' + name).classList.remove('active'); 
+}
+
+function toggleBonusField(tipo) {
+    const check = document.getElementById('check-bonus-' + tipo);
+    document.getElementById('field-bonus-' + tipo).classList.toggle('hidden', !check.checked);
+}
+
+function calcolaPunti(spesa) { return Math.floor(spesa); }
+
+function getAcquistiPerAnno(acquirente, anno) { 
+    return (acquirente.acquisti || []).filter(a => a.anno === anno || a.anno === undefined); 
+}
+
+function calcolaTotaliPerAnno(acquirente, anno) {
+    let punti = 0, bonusCons = 0, bonusParty = 0;
+    getAcquistiPerAnno(acquirente, anno).forEach(a => {
+        punti += a.punti !== undefined ? a.punti : calcolaPunti(a.spesa || 0);
+        bonusCons += a.bonusCons || 0;
+        bonusParty += a.bonusParty || 0;
+    });
+    return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
+}
+
+function calcolaTotaliGenerali(acquirente) {
+    let punti = 0, bonusCons = 0, bonusParty = 0;
+    (acquirente.acquisti || []).forEach(acq => {
+        punti += acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa || 0);
+        bonusCons += acq.bonusCons || 0;
+        bonusParty += acq.bonusParty || 0;
+    });
+    return { punti, bonusCons, bonusParty, totale: punti + bonusCons + bonusParty };
+}
+
+// ==========================================
+// DASHBOARD E GRAFICI
+// ==========================================
+function updateDashboard() {
+    const anno = parseInt(document.getElementById('dashboard-year').value);
+    let totalPunti = 0, totalBonusCons = 0, totalBonusParty = 0;
+    acquirenti.forEach(a => {
+        const t = calcolaTotaliPerAnno(a, anno);
+        totalPunti += t.punti;
+        totalBonusCons += t.bonusCons;
+        totalBonusParty += t.bonusParty;
+    });
+    document.getElementById('stat-acquirenti').textContent = acquirenti.length;
+    document.getElementById('stat-punti').textContent = totalPunti;
+    document.getElementById('stat-bonus-cons').textContent = totalBonusCons;
+    document.getElementById('stat-bonus-party').textContent = totalBonusParty;
+    updateChart(anno);
+}
+
+let chart = null;
+function updateChart(anno) {
+    const ctx = document.getElementById('chart-punti').getContext('2d');
+    const data = acquirenti.map((a, idx) => ({ 
+        nome: a.nome, 
+        totale: calcolaTotaliPerAnno(a, anno).totale, 
+        color: getColorForAcquirente(idx) 
+    })).filter(d => d.totale > 0).sort((a, b) => b.totale - a.totale).slice(0, 15);
+    
+    if (chart) chart.destroy();
+    if (data.length === 0) {
+        chart = new Chart(ctx, { 
+            type: 'bar', 
+            data: { labels: [], datasets: [] }, 
+            options: { plugins: { title: { display: true, text: 'Nessun dato per l\'anno ' + anno } } } 
+        });
+        return;
+    }
+    
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: { 
+            labels: data.map(d => d.nome), 
+            datasets: [{ 
+                label: 'Punti Totali', 
+                data: data.map(d => d.totale), 
+                backgroundColor: data.map(d => d.color + 'cc'), 
+                borderColor: data.map(d => d.color), 
+                borderWidth: 2 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            plugins: { 
+                legend: { display: false }, 
+                title: { display: true, text: 'Top Acquirenti ' + anno + ' - Punti Totali', font: { size: 16, weight: 'bold' } } 
+            }, 
+            scales: { 
+                y: { beginAtZero: true, title: { display: true, text: 'Punti Totali', font: { weight: 'bold' } } }, 
+                x: { ticks: { font: { weight: 'bold', size: 13 }, maxRotation: 45, minRotation: 45 } } 
+            } 
+        }
+    });
+}
+
+// ==========================================
+// CARICAMENTO E RENDERING ACQUIRENTI
+// ==========================================
+async function loadAcquirenti() {
+    try {
+        const snapshot = await db.collection('acquirenti').get();
+        acquirenti = [];
+        snapshot.forEach(doc => acquirenti.push({ id: doc.id, ...doc.data() }));
+        acquirenti.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+        renderAcquirenti(); 
+        renderIndice();
+        updateDashboard();
+    } catch (error) { 
+        console.error("Errore caricamento:", error); 
+    }
+}
+
+function renderIndice() {
+    const container = document.getElementById('indice-list');
+    if (!container) return;
+    if (acquirenti.length === 0) { 
+        container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Nessun acquirente.</p></div>'; 
+        return; 
+    }
+    container.innerHTML = acquirenti.map((a, idx) => 
+        '<div class="indice-item" onclick="openScheda(\'' + a.id + '\')">' +
+        '<div class="color-dot" style="background:' + getColorForAcquirente(idx) + '"></div>' +
+        '<div class="nome">' + a.nome + '</div>' +
+        '<div class="arrow">→</div></div>'
+    ).join('');
+}
+
+function renderAcquirenti() {
+    const container = document.getElementById('acquirenti-list');
+    if (!container) return;
+    if (acquirenti.length === 0) { 
+        container.innerHTML = '<div class="empty-state"><div class="icon">👥</div><p>Nessun acquirente.</p></div>'; 
+        return; 
+    }
+    container.innerHTML = acquirenti.map((a, idx) => {
+        const color = getColorForAcquirente(idx);
+        const t = calcolaTotaliGenerali(a);
+        return '<div class="acquirente-card" style="border-left-color:' + color + '">' +
+            '<div class="card-header">' +
+            '<h3 onclick="openScheda(\'' + a.id + '\')" style="color:' + color + '">' + a.nome + '</h3>' +
+            '<div class="action-buttons">' +
+            '<button class="btn-edit-nome" onclick="event.stopPropagation();openEditNome(\'' + a.id + '\',\'' + a.nome.replace(/'/g, "\\'") + '\')">✏️ Modifica</button>' +
+            '<button class="btn-delete-acquirente" onclick="event.stopPropagation();openDeleteAcquirente(\'' + a.id + '\',\'' + a.nome.replace(/'/g, "\\'") + '\')">🗑️ Elimina</button>' +
+            '</div></div>' +
+            '<div class="acquirente-stats" onclick="openScheda(\'' + a.id + '\')" style="cursor:pointer">' +
+            '<div class="acquirente-stat"><div class="acquirente-stat-label">Punti</div><div class="acquirente-stat-value" style="color:#43e97b">' + t.punti + '</div></div>' +
+            '<div class="acquirente-stat"><div class="acquirente-stat-label">Bonus C.</div><div class="acquirente-stat-value" style="color:#fa709a">' + t.bonusCons + '</div></div>' +
+            '<div class="acquirente-stat"><div class="acquirente-stat-label">Bonus P.</div><div class="acquirente-stat-value" style="color:#f6d365">' + t.bonusParty + '</div></div>' +
+            '<div class="acquirente-stat"><div class="acquirente-stat-label">Totale</div><div class="acquirente-stat-value" style="color:' + color + '">' + t.totale + '</div></div>' +
+            '</div></div>';
+    }).join('');
+}
+
+// ==========================================
+// GESTIONE ACQUIRENTI (CRUD)
+// ==========================================
+async function addAcquirente(event) {
+    event.preventDefault();
+    const nome = document.getElementById('input-nome').value.trim();
+    if (!nome) return;
+    await db.collection('acquirenti').add({ 
+        nome, 
+        acquisti: [], 
+        createdAt: firebase.firestore.FieldValue.serverTimestamp() 
+    });
+    closeModal('add-acquirente'); 
+    document.getElementById('input-nome').value = '';
+    await loadAcquirenti();
+}
+
+function openEditNome(id, nome) { 
+    acquirenteToEdit = id; 
+    document.getElementById('edit-nome-input').value = nome; 
+    document.getElementById('modal-edit-nome').classList.add('active'); 
+}
+
+async function saveEditNome(event) {
+    event.preventDefault();
+    const nuovoNome = document.getElementById('edit-nome-input').value.trim();
+    if (!nuovoNome || !acquirenteToEdit) return;
+    await db.collection('acquirenti').doc(acquirenteToEdit).update({ nome: nuovoNome });
+    closeModal('edit-nome'); 
+    acquirenteToEdit = null;
+    if (currentAcquirenteId) document.getElementById('scheda-nome').textContent = nuovoNome;
+    await loadAcquirenti();
+}
+
+function editNomeFromScheda() { 
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (a) openEditNome(a.id, a.nome); 
+}
+
+function openDeleteAcquirente(id, nome) { 
+    acquirenteToDelete = id; 
+    document.getElementById('delete-acquirente-nome').textContent = nome; 
+    document.getElementById('modal-delete-acquirente').classList.add('active'); 
+}
+
+async function confirmDeleteAcquirente() {
+    if (!acquirenteToDelete) return;
+    await db.collection('acquirenti').doc(acquirenteToDelete).delete();
+    closeModal('delete-acquirente'); 
+    acquirenteToDelete = null; 
+    currentAcquirenteId = null; 
+    showView('acquirenti');
+}
+
+function deleteAcquirenteFromScheda() { 
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (a) openDeleteAcquirente(a.id, a.nome); 
+}
+
+function openScheda(id) {
+    currentAcquirenteId = id;
+    const a = acquirenti.find(x => x.id === id);
+    if (!a) return;
+    document.getElementById('scheda-nome').textContent = a.nome;
+    refreshScheda();
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('scheda-view').classList.add('active');
+}
+
+function refreshScheda() {
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (!a) return;
+    const anno = parseInt(document.getElementById('scheda-year').value);
+    document.getElementById('riepilogo-anno').textContent = '(' + anno + ')';
+    const t = calcolaTotaliPerAnno(a, anno);
+    document.getElementById('scheda-punti').textContent = t.punti;
+    document.getElementById('scheda-bonus-cons').textContent = t.bonusCons;
+    document.getElementById('scheda-bonus-party').textContent = t.bonusParty;
+    document.getElementById('scheda-totale').textContent = t.totale;
+    renderSchedaTable(a, anno);
+}
+
+function renderSchedaTable(a, anno) {
+    const tbody = document.getElementById('scheda-table');
+    const acquisti = getAcquistiPerAnno(a, anno);
+    let rows = '';
+    for (let i = 0; i < 12; i++) {
+        const acq = acquisti.find(x => x.mese === i);
+        if (acq) {
+            const punti = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
+            rows += '<tr>' +
+                '<td>' + mesi[i] + '</td>' +
+                '<td>€ ' + acq.spesa.toFixed(2) + '</td>' +
+                '<td>' + punti + '</td>' +
+                '<td>' + (acq.bonusCons > 0 ? acq.bonusCons : '-') + '</td>' +
+                '<td>' + (acq.bonusParty > 0 ? acq.bonusParty : '-') + '</td>' +
+                '<td class="actions-cell">' +
+                '<button class="btn btn-warning btn-sm" onclick="openEditAcquisto(' + i + ')">✏️</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteAcquisto(' + i + ')">️</button>' +
+                '</td></tr>';
+        } else { 
+            rows += '<tr><td>' + mesi[i] + '</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>'; 
+        }
+    }
+    tbody.innerHTML = rows;
+}
+
+async function addAcquisto(event) {
+    event.preventDefault();
+    const anno = parseInt(document.getElementById('input-anno').value);
+    const mese = parseInt(document.getElementById('input-mese').value);
+    const spesa = parseFloat(document.getElementById('input-spesa').value);
+    const bonusCons = document.getElementById('check-bonus-cons').checked ? (parseFloat(document.getElementById('input-bonus-cons').value) || 0) : 0;
+    const bonusParty = document.getElementById('check-bonus-party').checked ? (parseFloat(document.getElementById('input-bonus-party').value) || 0) : 0;
+    
+    if (!currentAcquirenteId) return;
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (!a) return;
+    if (!a.acquisti) a.acquisti = [];
+    a.acquisti = a.acquisti.filter(x => !(x.anno === anno && x.mese === mese));
+    a.acquisti.push({ anno, mese, spesa, punti: calcolaPunti(spesa), bonusCons, bonusParty });
+    
+    await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+    closeModal('add-acquisto'); 
+    document.getElementById('scheda-year').value = anno;
+    refreshScheda(); 
+    updateDashboard();
+}
+
+function openEditAcquisto(index) {
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (!a) return;
+    const anno = parseInt(document.getElementById('scheda-year').value);
+    const acq = getAcquistiPerAnno(a, anno)[index]; 
+    if (!acq) return;
+    currentEditIndex = index;
+    document.getElementById('edit-mese').value = acq.mese;
+    document.getElementById('edit-spesa').value = acq.spesa;
+    document.getElementById('edit-punti').value = acq.punti !== undefined ? acq.punti : calcolaPunti(acq.spesa);
+    document.getElementById('edit-bonus-cons').value = acq.bonusCons || 0;
+    document.getElementById('edit-bonus-party').value = acq.bonusParty || 0;
+    document.getElementById('edit-spesa').oninput = function() { 
+        document.getElementById('edit-punti').value = calcolaPunti(parseFloat(this.value) || 0); 
+    };
+    document.getElementById('modal-edit-acquisto').classList.add('active');
+}
+
+async function saveEditAcquisto(event) {
+    event.preventDefault();
+    if (currentEditIndex === null || !currentAcquirenteId) return;
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (!a) return;
+    const anno = parseInt(document.getElementById('scheda-year').value);
+    const acq = getAcquistiPerAnno(a, anno)[currentEditIndex]; 
+    if (!acq) return;
+    const realIndex = a.acquisti.findIndex(x => x === acq); 
+    if (realIndex === -1) return;
+    
+    a.acquisti[realIndex] = { 
+        anno, 
+        mese: parseInt(document.getElementById('edit-mese').value), 
+        spesa: parseFloat(document.getElementById('edit-spesa').value), 
+        punti: parseInt(document.getElementById('edit-punti').value), 
+        bonusCons: parseInt(document.getElementById('edit-bonus-cons').value) || 0, 
+        bonusParty: parseInt(document.getElementById('edit-bonus-party').value) || 0 
+    };
+    
+    await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+    closeModal('edit-acquisto'); 
+    currentEditIndex = null; 
+    refreshScheda(); 
+    updateDashboard();
+}
+
+async function deleteAcquisto(index) {
+    if (!confirm('Eliminare questo acquisto?')) return;
+    const a = acquirenti.find(x => x.id === currentAcquirenteId); 
+    if (!a) return;
+    const anno = parseInt(document.getElementById('scheda-year').value);
+    const acq = getAcquistiPerAnno(a, anno)[index]; 
+    if (!acq) return;
+    const realIndex = a.acquisti.findIndex(x => x === acq);
+    if (realIndex !== -1) a.acquisti.splice(realIndex, 1);
+    await db.collection('acquirenti').doc(currentAcquirenteId).update({ acquisti: a.acquisti });
+    refreshScheda(); 
+    updateDashboard();
+}
+
+// ==========================================
+// GESTIONE ORDINI
+// ==========================================
+let ordini = [];
+let ordineCorrente = null;
+
+async function loadOrdini() {
+    try {
+        const snap = await db.collection('ordini').orderBy('dataCreazione', 'desc').get();
+        ordini = [];
+        snap.forEach(doc => ordini.push({id: doc.id, ...doc.data()}));
+        renderOrdini();
+    } catch(e) { console.error(e); }
+}
+
+function renderOrdini() {
+    const c = document.getElementById('ordini-list');
+    if(ordini.length===0) { 
+        c.innerHTML='<div class="empty-state"><div class="icon">🛒</div><p>Nessun ordine</p></div>'; 
+        return; 
+    }
+    c.innerHTML = ordini.map(o => `
+        <div class="ordine-card ${o.stato}" onclick="apriOrdine('${o.id}')">
+            <div class="ordine-header">
+                <div><strong>Ordine #${o.numero}</strong> - ${o.dataCreazione ? new Date(o.dataCreazione.seconds*1000).toLocaleDateString() : 'Data non disp.'}</div>
+                <span class="ordine-stato stato-${o.stato}">${o.stato==='bozza'?'📝 Bozza':'✅ Confermato'}</span>
+            </div>
+            <div>Totale: €${(o.totaleOrdine||0).toFixed(2)} - ${o.righe?.length||0} articoli</div>
+        </div>
+    `).join('');
+}
+
+function creaNuovoOrdine() {
+    ordineCorrente = { numero: ordini.length + 1, stato: 'bozza', righe: [] };
+    renderDettaglioOrdine();
+    showView('dettaglio-ordine');
+}
+
+function apriOrdine(id) {
+    ordineCorrente = ordini.find(o => o.id === id);
+    renderDettaglioOrdine();
+    showView('dettaglio-ordine');
+}
+
+function renderDettaglioOrdine() {
+    document.getElementById('ordine-titolo').textContent = `Ordine #${ordineCorrente.numero}`;
+    const badge = document.getElementById('ordine-stato-badge');
+    badge.textContent = ordineCorrente.stato==='bozza'?' Bozza':'✅ Confermato';
+    badge.className = `ordine-stato stato-${ordineCorrente.stato}`;
+    
+    if(ordineCorrente.stato === 'bozza') {
+        document.getElementById('ordine-bozza-controls').style.display = 'block';
+        document.getElementById('ordine-confermato-view').style.display = 'none';
+        renderRigheOrdine();
+    } else {
+        document.getElementById('ordine-bozza-controls').style.display = 'none';
+        document.getElementById('ordine-confermato-view').style.display = 'block';
+        renderRiepilogoConfermato();
+    }
+}
+
+function renderRigheOrdine() {
+    const tbody = document.getElementById('ordine-righe-body');
+    tbody.innerHTML = ordineCorrente.righe.map((r, i) => {
+        const acqSelect = acquirenti.map(a => `<option value="${a.id}" ${r.acquirenteId===a.id?'selected':''}>${a.nome}</option>`).join('');
+        const totaleRiga = ((r.quantita||0) * (r.prezzoUnitario||0));
+        return `<tr>
+            <td><input type="text" value="${r.codice||''}" onchange="updateRiga(${i},'codice',this.value)" placeholder="Codice"></td>
+            <td><input type="text" value="${r.descrizione||''}" onchange="updateRiga(${i},'descrizione',this.value)" placeholder="Descrizione"></td>
+            <td><input type="number" value="${r.quantita||1}" min="1" onchange="updateRiga(${i},'quantita',this.value)" style="width:60px"></td>
+            <td><input type="number" value="${r.prezzoUnitario||0}" step="0.01" onchange="updateRiga(${i},'prezzoUnitario',this.value)" style="width:80px"></td>
+            <td><select onchange="updateRiga(${i},'acquirenteId',this.value)"><option value="">Seleziona...</option>${acqSelect}</select></td>
+            <td>€${totaleRiga.toFixed(2)}</td>
+            <td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(${i})">️</button></td>
+        </tr>`;
+    }).join('');
+    calcolaTotaleOrdine();
+}
+
+function updateRiga(index, campo, valore) {
+    if(campo==='quantita' || campo==='prezzoUnitario') valore = parseFloat(valore)||0;
+    ordineCorrente.righe[index][campo] = valore;
+    if(campo==='quantita' || campo==='prezzoUnitario') renderRigheOrdine();
+}
+
+function aggiungiRigaOrdine() {
+    ordineCorrente.righe.push({ codice: '', descrizione: '', quantita: 1, prezzoUnitario: 0, acquirenteId: '' });
+    renderRigheOrdine();
+}
+
+function eliminaRiga(index) {
+    ordineCorrente.righe.splice(index, 1);
+    renderRigheOrdine();
+}
+
+function calcolaTotaleOrdine() {
+    const totale = ordineCorrente.righe.reduce((sum, r) => sum + ((r.quantita||0)*(r.prezzoUnitario||0)), 0);
+    document.getElementById('ordine-totale-display').textContent = totale.toFixed(2);
+    ordineCorrente.totaleOrdine = totale;
+}
+
+async function salvaBozzaOrdine() {
+    try {
+        ordineCorrente.dataCreazione = firebase.firestore.FieldValue.serverTimestamp();
+        if(ordineCorrente.id) {
+            await db.collection('ordini').doc(ordineCorrente.id).update(ordineCorrente);
+        } else {
+            const docRef = await db.collection('ordini').add(ordineCorrente);
+            ordineCorrente.id = docRef.id;
+        }
+        alert('💾 Bozza salvata!');
+        showView('ordini');
+    } catch(e) { console.error(e); alert('Errore salvataggio'); }
+}
+
+async function confermaOrdine() {
+    if(!confirm('✅ Confermi l\'ordine? Verrà suddiviso tra gli acquirenti.')) return;
+    
+    const riepilogo = {};
+    ordineCorrente.righe.forEach(r => {
+        if(!r.acquirenteId) return;
+        if(!riepilogo[r.acquirenteId]) {
+            const acq = acquirenti.find(a => a.id === r.acquirenteId);
+            riepilogo[r.acquirenteId] = { nome: acq?.nome||'', totale: 0, punti: 0 };
+        }
+        const totaleRiga = (r.quantita||0) * (r.prezzoUnitario||0);
+        riepilogo[r.acquirenteId].totale += totaleRiga;
+        riepilogo[r.acquirenteId].punti += Math.floor(totaleRiga);
+    });
+    
+    ordineCorrente.riepilogoAcquirenti = riepilogo;
+    ordineCorrente.stato = 'confermato';
+    ordineCorrente.dataConferma = new Date();
+    
+    try {
+        if(ordineCorrente.id) {
+            await db.collection('ordini').doc(ordineCorrente.id).update(ordineCorrente);
+        } else {
+            ordineCorrente.dataCreazione = firebase.firestore.FieldValue.serverTimestamp();
+            await db.collection('ordini').add(ordineCorrente);
+        }
+        
+        const meseCorrente = new Date().getMonth();
+        const annoCorrente = parseInt(document.getElementById('dashboard-year')?.value || '2026');
+        
+        for(const [acqId, dati] of Object.entries(riepilogo)) {
+            const acq = acquirenti.find(a => a.id === acqId);
+            if(!acq) continue;
+            if(!acq.acquisti) acq.acquisti = [];
+            
+            let acquisto = acq.acquisti.find(a => a.mese === meseCorrente && a.anno === annoCorrente);
+            if(!acquisto) {
+                acquisto = { anno: annoCorrente, mese: meseCorrente, spesa: 0, punti: 0, bonusCons: 0, bonusParty: 0 };
+                acq.acquisti.push(acquisto);
+            }
+            
+            acquisto.spesa += dati.totale;
+            acquisto.punti += dati.punti;
+            
+            await db.collection('acquirenti').doc(acqId).update({ acquisti: acq.acquisti });
+        }
+        
+        alert('✅ Ordine confermato e suddiviso!');
+        showView('ordini');
+        loadAcquirenti();
+    } catch(e) { console.error(e); alert('Errore conferma ordine'); }
+}
+
+function renderRiepilogoConfermato() {
+    const content = document.getElementById('riepilogo-acquirenti-content');
+    if(!ordineCorrente.riepilogoAcquirenti) {
+        content.innerHTML = '<p>Nessun riepilogo disponibile</p>';
+        return;
+    }
+    content.innerHTML = Object.entries(ordineCorrente.riepilogoAcquirenti).map(([id, dati]) => `
+        <div style="padding:10px;margin:5px 0;background:white;border-radius:8px">
+            <strong>${dati.nome}</strong>: €${dati.totale.toFixed(2)} → ${dati.punti} punti
+        </div>
+    `).join('');
 }
 </script>
 </body>

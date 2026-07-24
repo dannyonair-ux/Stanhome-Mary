@@ -407,11 +407,10 @@ auth.onAuthStateChanged(user => {
         document.getElementById('app-content').style.display = 'block';
         loadAcquirenti();
         updateDashboard();
-        caricaCatalogoProdotti();  // ← AGGIUNGI QUESTA RIGA
+        caricaCatalogoProdotti();  // ← Questa è la riga che hai aggiunto
     } else {
-    document.getElementById('login-overlay').style.display = 'flex';
-    document.getElementById('app-content').style.display = 'none';
-}
+        document.getElementById('login-overlay').style.display = 'flex';
+        document.getElementById('app-content').style.display = 'none';
     }
 });
 

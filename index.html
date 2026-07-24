@@ -881,25 +881,76 @@ function renderRigheOrdine() {
 }
 
 // Nuova funzione: gestisce la selezione dall'autocomplete
-function selezionaProdottoRiga(index, valore) {
+async function selezionaProdottoRiga(index, valore) {
     if(!valore) return;
     
-    // Cerca il prodotto nel catalogo caricato
-    const prodotto = catalogoProdotti.find(p => `${p.codice} - ${p.descrizione}` === valore);
+    // Cerca il prodotto nel catalogo
+    const prodotto = catalogoProdotti.find(p => 
+        (p.codice + ' - ' + p.descrizione) === valore || 
+        p.codice === valore
+    );
     
     if(prodotto) {
-        // Se trovato, aggiorna codice e descrizione nascosti
+        // Prodotto trovato, aggiorna la riga
         ordineCorrente.righe[index].codice = prodotto.codice;
         ordineCorrente.righe[index].descrizione = prodotto.descrizione;
-        
-        // Aggiorna i campi hidden per sicurezza
-        document.getElementById(`riga-codice-${index}`).value = prodotto.codice;
-        document.getElementById(`riga-desc-${index}`).value = prodotto.descrizione;
     } else {
-        // Se l'utente ha scritto qualcosa a mano, lo salviamo come codice
-        ordineCorrente.righe[index].codice = valore;
-        ordineCorrente.righe[index].descrizione = '';
+        // Prodotto NON trovato, chiedi se aggiungerlo
+        const aggiungi = confirm(
+            'Prodotto non trovato nel catalogo!\n\n' +
+            'Codice inserito: ' + valore + '\n\n' +
+            'Vuoi aggiungerlo al catalogo?\n' +
+            '(Dovrai inserire la descrizione nell\'ordine)'
+        );
+        
+        if(aggiungi) {
+            // Chiedi la descrizione
+            const descrizione = prompt('Inserisci la descrizione del prodotto:');
+            
+            if(descrizione && descrizione.trim() !== '') {
+                // Aggiungi al Firebase
+                try {
+                    await db.collection('prodotti').doc(valore).set({
+                        codice: valore,
+                        descrizione: descrizione.trim(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Aggiungi all'array locale
+                    const nuovoProdotto = { codice: valore, descrizione: descrizione.trim() };
+                    catalogoProdotti.push(nuovoProdotto);
+                    
+                    // Aggiungi al datalist
+                    const datalist = document.getElementById('lista-prodotti');
+                    if(datalist) {
+                        const option = document.createElement('option');
+                        option.value = valore + ' - ' + descrizione.trim();
+                        datalist.appendChild(option);
+                    }
+                    
+                    // Aggiorna la riga
+                    ordineCorrente.righe[index].codice = valore;
+                    ordineCorrente.righe[index].descrizione = descrizione.trim();
+                    
+                    alert('✅ Prodotto aggiunto al catalogo!');
+                } catch(e) {
+                    alert('❌ Errore nell\'aggiunta: ' + e.message);
+                    ordineCorrente.righe[index].codice = valore;
+                    ordineCorrente.righe[index].descrizione = '';
+                }
+            } else {
+                // Descrizione vuota, salva solo il codice
+                ordineCorrente.righe[index].codice = valore;
+                ordineCorrente.righe[index].descrizione = '';
+            }
+        } else {
+            // Non aggiungere, salva solo il codice
+            ordineCorrente.righe[index].codice = valore;
+            ordineCorrente.righe[index].descrizione = '';
+        }
     }
+    
+    renderRigheOrdine();
 }
 
 function updateRiga(index, campo, valore) {

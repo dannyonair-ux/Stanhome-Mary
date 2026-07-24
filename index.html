@@ -399,8 +399,8 @@ function handleLogout() {
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) loginOverlay.style.display = 'none';
         loadAcquirenti();
     } else {
         document.getElementById('login-overlay').style.display = 'flex';

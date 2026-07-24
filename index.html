@@ -164,7 +164,7 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
     </div>
 </div>
 
-<div class="container">
+<div id="app-content" class="container">
     <div class="header">
         <button class="btn-logout" onclick="handleLogout()">🚪 Esci</button>
 <div class="header">
@@ -404,13 +404,13 @@ function handleLogout() {
 auth.onAuthStateChanged(user => {
     if (user) {
         document.getElementById('login-overlay').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
+        // document.getElementById('app-content').style.display = 'block';  ← COMMENTA O RIMUOVI QUESTA RIGA
         loadAcquirenti();
         updateDashboard();
-        caricaCatalogoProdotti();
+        caricaCatalogoProdotti();  // ← DEVE ESSERCI QUESTA
     } else {
         document.getElementById('login-overlay').style.display = 'flex';
-        document.getElementById('app-content').style.display = 'none';
+        // document.getElementById('app-content').style.display = 'none';  ← COMMENTA O RIMUOVI
     }
 });
 

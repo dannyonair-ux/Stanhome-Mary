@@ -409,7 +409,9 @@ auth.onAuthStateChanged(user => {
         updateDashboard();
         caricaCatalogoProdotti();  // ← AGGIUNGI QUESTA RIGA
     } else {
-        ...
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app-content').style.display = 'none';
+}
     }
 });
 

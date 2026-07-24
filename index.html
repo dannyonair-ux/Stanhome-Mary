@@ -866,18 +866,94 @@ function renderRigheOrdine() {
         const valoreCampo = prodottoSel ? (prodottoSel.codice + ' - ' + prodottoSel.descrizione) : (r.codice || '');
         
         return '<tr>' +
-            '<td colspan="2"><input type="text" list="lista-prodotti" value="' + valoreCampo + '" ' +
-                'onchange="selezionaProdottoRiga(' + i + ', this.value)" ' +
-                'placeholder="Cerca codice o nome..." ' +
-                'style="width:100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;"></td>' +
+            '<td>' +
+                '<div style="display:flex;gap:5px;">' +
+                    '<input type="text" id="codice-riga-' + i + '" value="' + (r.codice||'') + '" ' +
+                        'placeholder="Codice" style="width:100px;flex:1;" ' +
+                        'list="lista-prodotti">' +
+                    '<button type="button" onclick="cercaProdottoRiga(' + i + ')" ' +
+                        'style="background:#667eea;color:white;border:none;border-radius:5px;padding:5px 10px;cursor:pointer;">✓</button>' +
+                '</div>' +
+                '<input type="hidden" id="desc-riga-' + i + '" value="' + (r.descrizione||'') + '">' +
+            '</td>' +
+            '<td><div id="desc-display-' + i + '" style="font-size:13px;color:#666;">' + (r.descrizione||'<em style="color:#999">Non trovata</em>') + '</div></td>' +
             '<td><input type="number" value="' + (r.quantita||1) + '" min="1" onchange="updateRiga(' + i + ',\'quantita\',this.value)" style="width:60px"></td>' +
-            '<td><input type="number" value="' + (r.prezzoUnitario||0) + '" step="0.01" onchange="updateRiga(' + i + ',\'prezzoUnitario\',this.value)" style="width:80px"></td>' +
+            '<td><input type="number" value="' + (r.prezzoUnitario||0) + '" step="0.01" min="0" onchange="updateRiga(' + i + ',\'prezzoUnitario\',this.value)" style="width:80px"></td>' +
             '<td><select onchange="updateRiga(' + i + ',\'acquirenteId\',this.value)" style="width:100%"><option value="">Seleziona...</option>' + acqSelect + '</select></td>' +
             '<td>€' + totaleRiga.toFixed(2) + '</td>' +
-            '<td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(' + i + ')">🗑️</button></td>' +
+            '<td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(' + i + ')">️</button></td>' +
         '</tr>';
     }).join('');
     calcolaTotaleOrdine();
+}
+
+// Nuova funzione per cercare/aggiungere prodotto
+async function cercaProdottoRiga(index) {
+    const codiceInput = document.getElementById('codice-riga-' + index);
+    const descInput = document.getElementById('desc-riga-' + index);
+    const descDisplay = document.getElementById('desc-display-' + index);
+    
+    const codice = codiceInput.value.trim();
+    if(!codice) {
+        alert('Inserisci un codice!');
+        return;
+    }
+    
+    // Cerca nel catalogo
+    const prodotto = catalogoProdotti.find(p => p.codice === codice);
+    
+    if(prodotto) {
+        // Trovato
+        ordineCorrente.righe[index].codice = prodotto.codice;
+        ordineCorrente.righe[index].descrizione = prodotto.descrizione;
+        descInput.value = prodotto.descrizione;
+        descDisplay.innerHTML = prodotto.descrizione;
+        alert('✅ Prodotto trovato: ' + prodotto.descrizione);
+    } else {
+        // Non trovato - chiedi se aggiungere
+        const aggiungi = confirm(
+            'Prodotto non trovato nel catalogo!\n\n' +
+            'Codice: ' + codice + '\n\n' +
+            'Vuoi aggiungerlo al catalogo permanente?'
+        );
+        
+        if(aggiungi) {
+            const descrizione = prompt('Inserisci la descrizione del prodotto:');
+            if(descrizione && descrizione.trim() !== '') {
+                try {
+                    // Aggiungi a Firebase
+                    await db.collection('prodotti').doc(codice).set({
+                        codice: codice,
+                        descrizione: descrizione.trim(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    // Aggiungi all'array locale
+                    const nuovoProdotto = { codice: codice, descrizione: descrizione.trim() };
+                    catalogoProdotti.push(nuovoProdotto);
+                    
+                    // Aggiungi al datalist
+                    const datalist = document.getElementById('lista-prodotti');
+                    if(datalist) {
+                        const option = document.createElement('option');
+                        option.value = codice + ' - ' + descrizione.trim();
+                        datalist.appendChild(option);
+                    }
+                    
+                    // Aggiorna la riga
+                    ordineCorrente.righe[index].codice = codice;
+                    ordineCorrente.righe[index].descrizione = descrizione.trim();
+                    descInput.value = descrizione.trim();
+                    descDisplay.innerHTML = descrizione.trim();
+                    
+                    alert('✅ Prodotto aggiunto al catalogo! Ora apparirà nell\'autocomplete.');
+                } catch(e) {
+                    alert('❌ Errore: ' + e.message);
+                }
+            }
+        }
+    }
+    renderRigheOrdine();
 }
 
 // Nuova funzione: gestisce la selezione dall'autocomplete

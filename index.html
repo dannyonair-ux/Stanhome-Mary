@@ -143,7 +143,8 @@ input:focus, select:focus { outline: none; border-color: #667eea; }
 </style>
 </head>
 <body>
-
+<!-- DATALIST PER AUTOCOMPLETE PRODOTTI (nascosto) -->
+<datalist id="lista-prodotti"></datalist>
 <div id="login-overlay">
     <div class="login-box">
         <h2>🔐 Login</h2>
@@ -402,12 +403,13 @@ function handleLogout() {
 
 auth.onAuthStateChanged(user => {
     if (user) {
-        const loginOverlay = document.getElementById('login-overlay');
-        if (loginOverlay) loginOverlay.style.display = 'none';
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('app-content').style.display = 'block';
         loadAcquirenti();
+        updateDashboard();
+        caricaCatalogoProdotti();  // ← AGGIUNGI QUESTA RIGA
     } else {
-        document.getElementById('login-overlay').style.display = 'flex';
-        document.getElementById('app-content').style.display = 'none';
+        ...
     }
 });
 
@@ -854,26 +856,25 @@ function renderRigheOrdine() {
     if(!tbody) return;
     
     tbody.innerHTML = ordineCorrente.righe.map((r, i) => {
-        const acqSelect = acquirenti.map(a => `<option value="${a.id}" ${r.acquirenteId===a.id?'selected':''}>${a.nome}</option>`).join('');
+        const acqSelect = acquirenti.map(a => 
+            '<option value="' + a.id + '" ' + (r.acquirenteId===a.id?'selected':'') + '>' + a.nome + '</option>'
+        ).join('');
         const totaleRiga = ((r.quantita||0) * (r.prezzoUnitario||0));
         
-        // Trova il prodotto selezionato per mostrare nel campo
         const prodottoSel = catalogoProdotti.find(p => p.codice === r.codice);
-        const valoreCampo = prodottoSel ? `${prodottoSel.codice} - ${prodottoSel.descrizione}` : (r.codice || '');
+        const valoreCampo = prodottoSel ? (prodottoSel.codice + ' - ' + prodottoSel.descrizione) : (r.codice || '');
         
-        return `<tr>
-            <td colspan="2">
-                <input type="text" list="lista-prodotti" value="${valoreCampo}" 
-                    onchange="selezionaProdottoRiga(${i}, this.value)" 
-                    placeholder="Cerca per codice o nome..." 
-                    style="width:100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-            </td>
-            <td><input type="number" value="${r.quantita||1}" min="1" onchange="updateRiga(${i},'quantita',this.value)" style="width:60px"></td>
-            <td><input type="number" value="${r.prezzoUnitario||0}" step="0.01" onchange="updateRiga(${i},'prezzoUnitario',this.value)" style="width:80px"></td>
-            <td><select onchange="updateRiga(${i},'acquirenteId',this.value)" style="width:100%"><option value="">Seleziona...</option>${acqSelect}</select></td>
-            <td>€${totaleRiga.toFixed(2)}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(${i})">🗑️</button></td>
-        </tr>`;
+        return '<tr>' +
+            '<td colspan="2"><input type="text" list="lista-prodotti" value="' + valoreCampo + '" ' +
+                'onchange="selezionaProdottoRiga(' + i + ', this.value)" ' +
+                'placeholder="Cerca codice o nome..." ' +
+                'style="width:100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;"></td>' +
+            '<td><input type="number" value="' + (r.quantita||1) + '" min="1" onchange="updateRiga(' + i + ',\'quantita\',this.value)" style="width:60px"></td>' +
+            '<td><input type="number" value="' + (r.prezzoUnitario||0) + '" step="0.01" onchange="updateRiga(' + i + ',\'prezzoUnitario\',this.value)" style="width:80px"></td>' +
+            '<td><select onchange="updateRiga(' + i + ',\'acquirenteId\',this.value)" style="width:100%"><option value="">Seleziona...</option>' + acqSelect + '</select></td>' +
+            '<td>€' + totaleRiga.toFixed(2) + '</td>' +
+            '<td><button class="btn btn-danger btn-sm" onclick="eliminaRiga(' + i + ')">🗑️</button></td>' +
+        '</tr>';
     }).join('');
     calcolaTotaleOrdine();
 }
@@ -1097,6 +1098,50 @@ function selezionaProdottoRiga(index, valore) {
 
 // Modifica la funzione auth.onAuthStateChanged per caricare anche il catalogo
 // Cerca il blocco auth.onAuthStateChanged e aggiungi caricaCatalogoProdotti()
+    // ==========================================
+// CATALOGO PRODOTTI E AUTOCOMPLETE
+// ==========================================
+let catalogoProdotti = [];
+
+async function caricaCatalogoProdotti() {
+    try {
+        const snap = await db.collection('prodotti').get();
+        catalogoProdotti = [];
+        const datalist = document.getElementById('lista-prodotti');
+        if(datalist) datalist.innerHTML = '';
+        
+        snap.forEach(doc => {
+            const p = doc.data();
+            if(p.codice && p.descrizione) {
+                catalogoProdotti.push(p);
+                if(datalist) {
+                    const option = document.createElement('option');
+                    option.value = p.codice + ' - ' + p.descrizione;
+                    datalist.appendChild(option);
+                }
+            }
+        });
+        console.log('✅ Catalogo caricato: ' + catalogoProdotti.length + ' prodotti');
+    } catch(e) {
+        console.error('Errore caricamento catalogo:', e);
+    }
+}
+
+function selezionaProdottoRiga(index, valore) {
+    if(!valore) return;
+    const prodotto = catalogoProdotti.find(p => 
+        (p.codice + ' - ' + p.descrizione) === valore || 
+        p.codice === valore
+    );
+    if(prodotto) {
+        ordineCorrente.righe[index].codice = prodotto.codice;
+        ordineCorrente.righe[index].descrizione = prodotto.descrizione;
+    } else {
+        ordineCorrente.righe[index].codice = valore;
+        ordineCorrente.righe[index].descrizione = '';
+    }
+    renderRigheOrdine();
+}
 </script>
 </body>
 </html>

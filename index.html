@@ -407,7 +407,7 @@ auth.onAuthStateChanged(user => {
         document.getElementById('app-content').style.display = 'block';
         loadAcquirenti();
         updateDashboard();
-        caricaCatalogoProdotti();  // ← Questa è la riga che hai aggiunto
+        caricaCatalogoProdotti();
     } else {
         document.getElementById('login-overlay').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
@@ -1054,25 +1054,25 @@ catalogoProdotti = [];
 
 async function caricaCatalogoProdotti() {
     try {
-        const snap = await db.collection('prodotti').orderBy('codice').get();
+        const snap = await db.collection('prodotti').get();
         catalogoProdotti = [];
         const datalist = document.getElementById('lista-prodotti');
         if(datalist) datalist.innerHTML = '';
         
         snap.forEach(doc => {
             const p = doc.data();
-            catalogoProdotti.push(p);
-            
-            // Aggiungi al datalist per l'autocomplete
-            if(datalist) {
-                const option = document.createElement('option');
-                option.value = `${p.codice} - ${p.descrizione}`;
-                datalist.appendChild(option);
+            if(p.codice && p.descrizione) {
+                catalogoProdotti.push(p);
+                if(datalist) {
+                    const option = document.createElement('option');
+                    option.value = p.codice + ' - ' + p.descrizione;
+                    datalist.appendChild(option);
+                }
             }
         });
-        console.log(`✅ Catalogo caricato: ${catalogoProdotti.length} prodotti`);
+        console.log('Catalogo caricato: ' + catalogoProdotti.length + ' prodotti');
     } catch(e) {
-        console.error("Errore caricamento catalogo:", e);
+        console.error('Errore caricamento catalogo:', e);
     }
 }
 
